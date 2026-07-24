@@ -1,0 +1,78 @@
+import { useState } from 'react';
+import { useAdamData } from '../../data/useAdamData';
+import { buildObjectives, pilotHealth } from '../../lib/kpi';
+import { Panel } from '../../components/layout/Panel';
+import { colors, spacing } from '../../theme/tokens';
+
+function buildSummaryText(data: ReturnType<typeof useAdamData>): string {
+  const built = buildObjectives(data.objectives);
+  const health = pilotHealth(built);
+  const lines = [
+    `ADAM — Résumé du pilote (${data.meta.pilot})`,
+    `Période : ${data.meta.range}`,
+    `Santé du pilote : ${health.label} — ${health.achieved}/${health.total} objectifs atteints`,
+    '',
+    ...built.map((o) => `- ${o.label} : ${o.actualTxt} (cible ${o.targetTxt}) — ${o.statusLabel}`),
+  ];
+  return lines.join('\n');
+}
+
+export function Reports() {
+  const data = useAdamData();
+  const [copied, setCopied] = useState(false);
+  const summary = buildSummaryText(data);
+
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(summary);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      setCopied(false);
+    }
+  };
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: spacing.xl, padding: spacing.xl }}>
+      <header style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: spacing.lg }}>
+        <div>
+          <h1 style={{ fontSize: 22, fontWeight: 700, margin: 0 }}>Rapports</h1>
+          <p style={{ color: colors.muted, fontSize: 13, margin: '4px 0 0' }}>
+            Exporter les chiffres clés pour les partenaires du pilote.
+          </p>
+        </div>
+        <button
+          onClick={handleCopy}
+          style={{
+            fontFamily: 'inherit',
+            fontSize: 13,
+            fontWeight: 700,
+            color: colors.text,
+            background: colors.indigo,
+            border: 'none',
+            borderRadius: 8,
+            padding: '10px 16px',
+            cursor: 'pointer',
+          }}
+        >
+          {copied ? 'Copié ✓' : 'Copier les chiffres clés'}
+        </button>
+      </header>
+
+      <Panel title="Résumé — jamais partagé tel quel">
+        <pre
+          style={{
+            fontFamily: "'Montserrat', system-ui, sans-serif",
+            fontSize: 13,
+            lineHeight: 1.7,
+            color: colors.text,
+            whiteSpace: 'pre-wrap',
+            margin: 0,
+          }}
+        >
+          {summary}
+        </pre>
+      </Panel>
+    </div>
+  );
+}
