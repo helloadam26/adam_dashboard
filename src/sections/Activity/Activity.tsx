@@ -6,27 +6,39 @@ import { colors, spacing } from '../../theme/tokens';
 
 export function Activity() {
   const data = useAdamData();
-  const { usage } = data;
+  const { usage, tokens } = data;
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: spacing.xl, padding: spacing.xl }}>
       <header>
         <h1 style={{ fontSize: 22, fontWeight: 700, margin: 0 }}>Activité</h1>
-        <p style={{ color: colors.muted, fontSize: 13, margin: '4px 0 0' }}>Quand et combien.</p>
+        <p style={{ color: colors.muted, fontSize: 13, margin: '4px 0 0' }}>
+          Quand et combien · 90 derniers jours. Dernier message reçu : {data.meta.lastActivity}.
+        </p>
       </header>
 
       <section style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: spacing.lg }}>
-        <StatCard label="DAU" value={usage.dau} hint="utilisateurs actifs aujourd'hui" />
-        <StatCard label="WAU" value={usage.wau} hint="utilisateurs actifs (7 jours)" />
-        <StatCard label="MAU" value={usage.mau} hint="utilisateurs actifs (30 jours)" />
+        <StatCard label="DAU" value={usage.dau} hint="actifs sur 24 h" />
+        <StatCard label="WAU" value={usage.wau} hint="actifs sur 7 jours" />
+        <StatCard label="MAU" value={usage.mau} hint="actifs sur 30 jours" />
       </section>
 
-      <Panel title="Utilisateurs actifs par jour (DAU)" subtitle="Repères du calendrier académique en surimpression">
-        <LineChart series={usage.dauSeries} events={data.calendar} />
+      <Panel title="Utilisateurs actifs par jour (DAU)" subtitle="Utilisateurs distincts ayant envoyé au moins un message">
+        <LineChart series={usage.dauSeries} />
       </Panel>
 
-      <Panel title="Volume de questions par jour" subtitle={`${usage.conversations.total.toLocaleString('fr-CA')} conversations sur la période`}>
-        <LineChart series={usage.conversations.perDay} events={data.calendar} color={colors.peri} />
+      <Panel
+        title="Conversations ouvertes par jour"
+        subtitle={`${usage.conversations.total.toLocaleString('fr-CA')} conversations depuis le lancement · ${usage.conversations.avgLength} questions par conversation en moyenne`}
+      >
+        <LineChart series={usage.conversations.perDay} color={colors.peri} />
+      </Panel>
+
+      <Panel
+        title="Tokens consommés par jour"
+        subtitle={`${tokens.last30.toLocaleString('fr-CA')} tokens sur 30 jours · ${tokens.total.toLocaleString('fr-CA')} depuis le lancement`}
+      >
+        <LineChart series={tokens.perDay} color={colors.warn} />
       </Panel>
     </div>
   );

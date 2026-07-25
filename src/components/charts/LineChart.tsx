@@ -1,27 +1,47 @@
 /**
  * Portage de la méthode lineChart() du prototype
  * (ressources/Dashboard interne d'ADAM/Dashboard ADAM.dc.html).
+ *
+ * Les repères de calendrier académique du prototype ont été retirés :
+ * aucune table ne porte ces dates.
  */
 import { useId } from 'react';
-import type { CalendarMark } from '../../data/types';
 import { colors } from '../../theme/tokens';
 
 interface LineChartProps {
   series: number[];
-  events?: CalendarMark[];
   color?: string;
   height?: number;
 }
 
-export function LineChart({ series, events = [], color = colors.indigo, height = 200 }: LineChartProps) {
+export function LineChart({ series, color = colors.indigo, height = 200 }: LineChartProps) {
   const gradientId = useId();
   const w = 640;
   const pl = 8;
   const pr = 8;
   const pt = 14;
-  const pb = events.length ? 26 : 12;
+  const pb = 12;
   const n = series.length;
-  const mx = Math.max(...series) * 1.12;
+
+  if (n < 2) {
+    return (
+      <div
+        style={{
+          height,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          fontSize: 12,
+          color: colors.faint,
+        }}
+      >
+        Pas assez de points sur la période.
+      </div>
+    );
+  }
+
+  // Une série entièrement à zéro donnerait une échelle nulle : on force un plafond de 1.
+  const mx = Math.max(...series, 1) * 1.12;
 
   const px = (i: number) => pl + (i * (w - pl - pr)) / (n - 1);
   const py = (v: number) => height - pb - (v / mx) * (height - pb - pt);
@@ -33,40 +53,6 @@ export function LineChart({ series, events = [], color = colors.indigo, height =
   return (
     <svg width="100%" height={height} viewBox={`0 0 ${w} ${height}`} preserveAspectRatio="none">
       <line x1={pl} y1={height - pb} x2={w - pr} y2={height - pb} stroke="rgba(255,255,255,.06)" />
-
-      {events.map((ev, k) => (
-        <g key={k}>
-          {ev.span ? (
-            <rect
-              x={px(ev.i)}
-              y={pt - 2}
-              width={px(ev.i + ev.span) - px(ev.i)}
-              height={height - pb - pt + 2}
-              fill="rgba(255,255,255,.035)"
-            />
-          ) : null}
-          <line
-            x1={px(ev.i)}
-            y1={pt - 2}
-            x2={px(ev.i)}
-            y2={height - pb}
-            stroke="rgba(255,255,255,.14)"
-            strokeWidth={1}
-            strokeDasharray="3 3"
-          />
-          <text
-            x={px(ev.i)}
-            y={height - pb + 14}
-            fill="#6E6E80"
-            fontSize={9}
-            fontWeight={600}
-            fontFamily="Montserrat"
-            textAnchor={ev.i < 8 ? 'start' : ev.i > n - 9 ? 'end' : 'middle'}
-          >
-            {ev.short}
-          </text>
-        </g>
-      ))}
 
       <defs>
         <linearGradient id={gradientId} x1={0} y1={0} x2={0} y2={1}>

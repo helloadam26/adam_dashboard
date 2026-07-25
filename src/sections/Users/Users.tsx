@@ -2,22 +2,21 @@ import { useAdamData } from '../../data/useAdamData';
 import { StatCard } from '../../components/kpi/StatCard';
 import { Panel } from '../../components/layout/Panel';
 import { Donut, DonutLegend } from '../../components/charts/Donut';
-import { BarList } from '../../components/charts/BarList';
+import { LineChart } from '../../components/charts/LineChart';
+import { DistributionPanel } from '../../components/DistributionPanel';
 import { colors, spacing } from '../../theme/tokens';
 
 export function Users() {
   const data = useAdamData();
   const { users } = data;
 
-  const statusColors = [colors.ok, colors.faint, colors.warn];
+  const statusColors = [colors.ok, colors.warn, colors.faint];
   const statusTotal = users.status.reduce((a, b) => a + b.n, 0);
   const statusSegments = users.status.map((s, i) => ({
     name: s.label,
-    val: Math.round((s.n / statusTotal) * 100),
+    val: statusTotal ? Math.round((s.n / statusTotal) * 100) : 0,
     color: statusColors[i % statusColors.length],
   }));
-
-  const facultyItems = users.byFaculty.map((f) => ({ name: f.name, value: f.n }));
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: spacing.xl, padding: spacing.xl }}>
@@ -49,9 +48,32 @@ export function Users() {
           </div>
         </Panel>
 
-        <Panel title="Répartition par faculté">
-          <BarList items={facultyItems} />
+        <Panel title="Inscriptions par jour" subtitle="90 derniers jours">
+          <LineChart series={users.signups} height={220} />
         </Panel>
+      </section>
+
+      <section style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: spacing.lg }}>
+        <DistributionPanel
+          title="Répartition par faculté"
+          distribution={users.byFaculty}
+          requis="Renseigner profiles.faculty à l'inscription dans l'app ADAM."
+        />
+        <DistributionPanel
+          title="Répartition par programme"
+          distribution={users.byProgram}
+          requis="Renseigner profiles.program à l'inscription dans l'app ADAM."
+        />
+        <DistributionPanel
+          title="Répartition par année d'étude"
+          distribution={users.byYear}
+          requis="Renseigner profiles.study_years à l'inscription dans l'app ADAM."
+        />
+        <DistributionPanel
+          title="Statut de résidence"
+          distribution={users.byResidency}
+          requis="Renseigner profiles.statut (Canadian / International) à l'inscription dans l'app ADAM."
+        />
       </section>
     </div>
   );

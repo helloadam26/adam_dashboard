@@ -98,17 +98,47 @@ Un `FiltersContext` global porte faculté / statut / langue / appareil / périod
 
 ---
 
-## 7. Ce qui bloque encore la bascule en données réelles
+## 7. Bascule en données réelles — ce que le schéma permet réellement
 
-Le seul point qui ne peut pas être résolu sans information externe : le **schéma Supabase** de l'app ADAM (tables/colonnes disponibles) pour écrire les vues de lecture. Tout le reste — UI, composants, logique de statut KPI, sécurité, structure — peut avancer dès maintenant sur données simulées.
+Schéma constaté (24 juillet 2026) : `profiles` (81), `agents` (9), `discussions` (597), `messages` (1 172), `daily_tokens` (356), `message_reactions` (4), `message_feedbacks` (2). Données de octobre 2025 à juillet 2026.
+
+**Principe de conception** : toute métrique dont une table ou une colonne existe en base est câblée, même si la colonne est encore vide. Les 9 sections du playbook sont toutes présentes. Les blocs sans donnée affichent un état vide explicite et s'alimenteront sans changement de code dès que l'app principale écrira. Ce n'est pas de l'analyse — c'est la conception complète du dashboard.
+
+**Alimenté par de vraies valeurs** — comptes créés et inscriptions/jour, DAU/WAU/MAU et séries, rétention J+7 / J+30, cohortes hebdomadaires, stickiness, conversations/jour, longueur moyenne de conversation, questions et conversations par actif, statut des comptes (actif / dormant / jamais actif), usage par faculté (via l'agent sollicité), quotas de tokens.
+
+**Câblé mais en attente de données** (bloc présent, état vide aujourd'hui) :
+
+| Métrique | Support en base | Ce qui manque |
+|---|---|---|
+| Répartition par faculté / programme / année | colonnes `profiles.*` présentes | valeurs NULL sur 81/81 — collecte côté app |
+| Statut de résidence | `profiles.statut` | idem + élargir la contrainte à 3 valeurs |
+| Satisfaction, résolution, sujets | `message_reactions`, `message_feedbacks`, `discussions.title` | volume dérisoire (4 réactions, 6 titres) — plus de sollicitation côté app |
+
+**Sans aucun support en base** — types de réponse et taux de repli, NPS, usage détaillé des fonctionnalités, installation PWA, langue d'interface, calendrier académique. Recensés exhaustivement, avec la dépendance responsable (utilisateurs / app principale / dashboard) et ce qu'il faudrait, dans [`src/data/unavailableMetrics.ts`](../src/data/unavailableMetrics.ts) — rendu dans **Paramètres → Métriques non disponibles**.
+
+La section **Facultés** est conservée sous ce nom : la table s'appelle encore `agents` côté app faute de renommage, mais les 9 entrées *sont* les facultés et services de l'uOttawa.
+
+Le `FiltersContext` de la section 6 reste en attente : sans dimension démographique renseignée, seul le filtre de période serait exploitable.
+
+### Accès aux données
+
+Les policies RLS des tables applicatives sont toutes de la forme « chacun ses propres lignes » (`auth.uid() = user_id`, et `profiles` limité à son propre profil). Aucun agrégat n'est donc lisible depuis le client. Deux migrations composent la couche de lecture :
+
+- `20260724120000_dashboard_readonly_views.sql` — `is_dashboard_admin()` (`security definer`) + 7 vues d'agrégats ;
+- `20260724130000_dashboard_metrics_extension.sql` — 4 vues supplémentaires (`demographics`, `quality`, `topics`, `quota`), resserrement des droits sur les vues existantes, et **ouverture temporaire** du prédicat d'accès pour la phase de conception.
+
+Les vues appartiennent à `postgres` (hors RLS des tables sous-jacentes) ; le contrôle d'accès vit dans leur corps (`where is_dashboard_admin()`), pas dans une policy — d'où le badge « Unrestricted » du Table Editor, normal pour une vue. Aucune vue n'expose de contenu de message, d'e-mail ni d'identifiant — **sauf `dashboard_topics`**, qui expose les titres de conversation rédigés par les étudiants (à arbitrer avec le volet vie privée du playbook avant mise en ligne).
+
+**Phase de conception — authentification désactivée.** `<AuthGate>` est retiré de `App.tsx` et `is_dashboard_admin()` renvoie `true`, le temps de finaliser le dashboard. Conséquence : quiconque a la clé anon (publique, présente dans le bundle) peut lire ces agrégats. La procédure de re-verrouillage est en fin de migration `20260724130000`.
 
 ---
 
 ## 8. Prochaines étapes concrètes
 
-1. Scaffold du projet Vite + React + TypeScript.
-2. Portage des tokens de design + primitives de graphiques depuis le prototype.
-3. Construction de la coquille (Sidebar + routing) + section **Vue d'ensemble** (scope bêta) de bout en bout avec données simulées.
-4. Itération sur les autres sections du scope bêta.
-5. Mise en place de l'authentification Supabase + 2FA.
-6. Une fois le schéma Supabase obtenu : remplacement des hooks mock par les vraies requêtes, section par section.
+1. ~~Scaffold du projet Vite + React + TypeScript.~~
+2. ~~Portage des tokens de design + primitives de graphiques depuis le prototype.~~
+3. ~~Construction de la coquille (Sidebar + routing) + les 9 sections.~~
+4. ~~Remplacement des hooks mock par les vraies requêtes Supabase.~~
+5. ~~Câbler toute métrique ayant un support en base, états vides pour le reste.~~
+6. **Avant mise en ligne** : réactiver `<AuthGate>`, restaurer le prédicat de `is_dashboard_admin()` (fin de migration `20260724130000`), passer `is_admin = true` sur les comptes du dashboard, puis ajouter 2FA (TOTP) et minuteur d'inactivité.
+7. Côté app ADAM : renseigner les champs de profil et solliciter davantage le retour utilisateur, pour remplir les blocs aujourd'hui en attente.

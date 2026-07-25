@@ -1,21 +1,17 @@
 import { useAdamData } from '../../data/useAdamData';
 import { StatCard } from '../../components/kpi/StatCard';
 import { Panel } from '../../components/layout/Panel';
-import { Donut, DonutLegend } from '../../components/charts/Donut';
 import { RankedList } from '../../components/RankedList';
+import { EmptyState } from '../../components/EmptyState';
 import { colors, spacing } from '../../theme/tokens';
 
-const RESPONSE_COLORS = [colors.indigo, colors.peri, colors.warn];
+const LOW_COVERAGE = 2; // % de réponses évaluées en dessous duquel on affiche un avertissement.
 
 export function Quality() {
   const data = useAdamData();
   const { quality } = data;
 
-  const responseSegments = quality.responseTypes.map((r, i) => ({
-    name: r.name,
-    val: r.val,
-    color: RESPONSE_COLORS[i % RESPONSE_COLORS.length],
-  }));
+  const lowCoverage = quality.reactionCoverage < LOW_COVERAGE;
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: spacing.xl, padding: spacing.xl }}>
@@ -26,45 +22,60 @@ export function Quality() {
         </p>
       </header>
 
-      <section style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: spacing.lg }}>
+      {lowCoverage && (
+        <EmptyState>
+          <strong style={{ color: colors.warn }}>Signal insuffisant.</strong> Seules{' '}
+          {quality.reactionsTotal} réponses sur {quality.assistantMessages.toLocaleString('fr-CA')} ont reçu une
+          réaction ({quality.reactionCoverage}% de couverture), et {quality.feedbacksTotal} commentaire(s) ont été
+          laissés. Les indicateurs ci-dessous sont affichés tels quels mais n'ont pas de valeur statistique tant
+          que le retour utilisateur n'est pas plus sollicité dans l'app.
+        </EmptyState>
+      )}
+
+      <section style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: spacing.lg }}>
         <StatCard
-          label="Satisfaction (thumbs)"
-          value={`${quality.satisfaction}%`}
-          deltaText={`${quality.satisfaction - quality.satisfactionPrev >= 0 ? '+' : ''}${(quality.satisfaction - quality.satisfactionPrev).toFixed(0)} pts vs préc.`}
-          deltaUp={quality.satisfaction >= quality.satisfactionPrev}
-          hint="cible 75 %+"
+          label="Satisfaction (pouces)"
+          value={quality.satisfaction === null ? '—' : `${quality.satisfaction}%`}
+          hint={`${quality.likes} 👍 · ${quality.dislikes} 👎`}
         />
+        <StatCard label="Réponses évaluées" value={`${quality.reactionCoverage}%`} hint="couverture des réactions" />
+        <StatCard label="Commentaires laissés" value={quality.feedbacksTotal} hint="feedbacks libres" />
         <StatCard
-          label="Résolution au 1er échange"
-          value={`${quality.firstResolution}%`}
-          deltaText={`${quality.firstResolution - quality.firstResolutionPrev >= 0 ? '+' : ''}${(quality.firstResolution - quality.firstResolutionPrev).toFixed(0)} pts vs préc.`}
-          deltaUp={quality.firstResolution >= quality.firstResolutionPrev}
-          hint="cible 65 %+"
+          label="Conv. à une question"
+          value={quality.firstResolution === null ? '—' : `${quality.firstResolution}%`}
+          hint="proxy de résolution — voir note"
         />
       </section>
 
-      <Panel title="Répartition des réponses" subtitle="Directe / reformulation / redirection">
-        <div style={{ display: 'flex', alignItems: 'center', gap: spacing.lg }}>
-          <Donut segments={responseSegments} />
-          <div style={{ flex: 1 }}>
-            <DonutLegend segments={responseSegments} />
-            <div style={{ marginTop: spacing.sm, fontSize: 11.5, color: colors.faint }}>
-              Zone saine pour reformulation/redirection : 10–25 %
-            </div>
-          </div>
-        </div>
+      <Panel
+        title="Sujets des conversations"
+        subtitle="D'après le titre généré par l'app"
+      >
+        {quality.topics.length === 0 ? (
+          <EmptyState>
+            Aucun titre de conversation disponible. Les titres ne sont générés que pour une poignée de
+            conversations ; il faut que l'app ADAM les produise systématiquement pour alimenter ce bloc.
+          </EmptyState>
+        ) : (
+          <RankedList items={quality.topics.map((t) => ({ label: t.title, value: t.n }))} />
+        )}
       </Panel>
 
-      <section style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: spacing.lg }}>
-        <Panel title="Top sujets de questions" subtitle="Hebdomadaire">
-          <RankedList
-            items={quality.topTopics.map((t) => ({ label: t.topic, value: t.n, trend: t.trend }))}
-          />
-        </Panel>
-        <Panel title="Où ADAM échoue / manque d'info" subtitle="Hebdomadaire">
-          <RankedList items={quality.failures.map((f) => ({ label: f.topic, value: f.n, note: f.note }))} />
-        </Panel>
-      </section>
+      <Panel title="Note méthodologique">
+        <div style={{ fontSize: 12.5, color: colors.muted, lineHeight: 1.7 }}>
+          <p style={{ margin: '0 0 8px' }}>
+            <strong style={{ color: colors.text }}>Satisfaction</strong> = part de pouces hauts parmi les
+            réactions. <strong style={{ color: colors.text }}>Conv. à une question</strong> approxime la
+            résolution au 1er échange en comptant les conversations où l'étudiant n'a posé qu'une seule question
+            — mais cela confond une vraie résolution avec un abandon.
+          </p>
+          <p style={{ margin: 0 }}>
+            Une mesure fiable de satisfaction, de résolution, de taux de repli ou de thèmes d'échec suppose
+            davantage de retour explicite côté app (question de clôture, classification des réponses). Détail
+            dans <em>Paramètres → Métriques non disponibles</em>.
+          </p>
+        </div>
+      </Panel>
     </div>
   );
 }

@@ -1,3 +1,13 @@
+/**
+ * Contrat de données du dashboard.
+ *
+ * Principe : toute métrique dont une table ou une colonne existe en base est câblée,
+ * même si la colonne est encore vide aujourd'hui. Les blocs correspondants affichent
+ * un état « aucune donnée » et se rempliront sans changement de code dès que l'app
+ * principale commencera à écrire. Les métriques réellement impossibles — celles qui
+ * n'ont aucun support en base — sont recensées dans `unavailableMetrics.ts`.
+ */
+
 export interface Objective {
   label: string;
   actual: number;
@@ -18,20 +28,9 @@ export interface NamedValue {
   val: number;
 }
 
-export interface SpotItem {
-  label: string;
-  val: number;
-}
-
 export interface NamedCount {
   name: string;
   n: number;
-}
-
-export interface CalendarMark {
-  i: number;
-  short: string;
-  span?: number;
 }
 
 export interface Cohort {
@@ -39,35 +38,45 @@ export interface Cohort {
   row: (number | null)[];
 }
 
-export interface TopicTrend {
-  topic: string;
-  n: number;
-  trend: 'up' | 'down' | 'flat';
-}
-
-export interface FailureTopic {
-  topic: string;
-  n: number;
-  note: string;
-}
-
-export interface ResponseType {
+export interface AgentUsage {
+  id: string;
   name: string;
-  val: number;
-  zone: [number, number] | null;
+  description: string;
+  conversations: number;
+  users: number;
+  questions: number;
+}
+
+export interface TopicItem {
+  title: string;
+  n: number;
+}
+
+/**
+ * Une répartition démographique. `renseigne` vaut false quand la colonne source
+ * n'est renseignée pour aucun compte — le bloc s'affiche alors en état vide plutôt
+ * que sous forme d'un unique segment « Non renseigné » à 100 %.
+ */
+export interface Distribution {
+  renseigne: boolean;
+  items: NamedCount[];
+  /** Comptes dont la colonne est NULL. */
+  manquants: number;
 }
 
 export interface AdamData {
   meta: {
     university: string;
-    universities: string[];
     pilot: string;
     range: string;
+    /** Horodatage de la requête, pas de la dernière activité. */
     updated: string;
+    /** Dernier message reçu, toutes conversations confondues. */
+    lastActivity: string;
     activeNow: number;
   };
+  /** Étiquettes des 90 derniers jours, alignées sur toutes les séries quotidiennes. */
   dates: string[];
-  calendar: CalendarMark[];
   objectives: Objective[];
   users: {
     total: number;
@@ -75,10 +84,10 @@ export interface AdamData {
     newToday: number;
     signups: number[];
     status: StatusItem[];
-    byFaculty: NamedCount[];
-    byResidency: NamedValue[];
-    byLanguage: NamedValue[];
-    byYear: NamedValue[];
+    byFaculty: Distribution;
+    byProgram: Distribution;
+    byYear: Distribution;
+    byResidency: Distribution;
   };
   usage: {
     dau: number;
@@ -94,31 +103,42 @@ export interface AdamData {
     stickiness: number;
     sessionsPerUser: number;
     questionsPerUser: number;
-    engagementRate: number;
     cohorts: Cohort[];
-    topFeatures: NamedValue[];
     conversations: {
       perDay: number[];
       total: number;
       avgLength: number;
-      byCategory: NamedValue[];
+      byFaculty: NamedValue[];
     };
   };
   quality: {
-    satisfaction: number;
-    satisfactionPrev: number;
-    firstResolution: number;
-    firstResolutionPrev: number;
-    fallbackRate: number;
-    fallbackPrev: number;
-    csatSeries: number[];
-    responseTypes: ResponseType[];
-    topTopics: TopicTrend[];
-    failures: FailureTopic[];
+    /** Part de pouces hauts sur l'ensemble des réactions. `null` si aucune réaction. */
+    satisfaction: number | null;
+    satisfactionPrev: number | null;
+    likes: number;
+    dislikes: number;
+    reactionsTotal: number;
+    /** Part des réponses de l'assistant ayant reçu une réaction. */
+    reactionCoverage: number;
+    feedbacksTotal: number;
+    assistantMessages: number;
+    /** Proxy : conversations à une seule question / conversations avec question. */
+    firstResolution: number | null;
+    oneQuestionDiscussions: number;
+    answeredDiscussions: number;
+    topics: TopicItem[];
   };
-  spot: SpotItem[];
-  filters: {
-    faculty: string[];
-    period: string[];
+  /** Facultés et services — la table s'appelle encore `agents` côté app. */
+  faculties: AgentUsage[];
+  tokens: {
+    total: number;
+    last30: number;
+    perDay: number[];
+    avgPerActiveUser: number;
+    avgLimit: number;
+    avgUsed: number;
+    daysAtLimit: number;
+    usersAtLimit: number;
+    userDays: number;
   };
 }

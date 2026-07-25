@@ -87,7 +87,7 @@ export function Sidebar() {
       </nav>
 
       <div style={{ padding: spacing.md, borderTop: `1px solid ${colors.line}`, fontSize: 11.5, color: colors.muted }}>
-        Équipe ADAM · pilote automne 2026
+        Équipe ADAM · authentification à venir
       </div>
     </aside>
   );

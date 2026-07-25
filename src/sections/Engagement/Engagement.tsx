@@ -2,9 +2,11 @@ import { useAdamData } from '../../data/useAdamData';
 import { buildObjectives } from '../../lib/kpi';
 import { StatCard } from '../../components/kpi/StatCard';
 import { KpiCard } from '../../components/kpi/KpiCard';
+import { Panel } from '../../components/layout/Panel';
+import { CohortTable } from '../../components/charts/CohortTable';
 import { colors, spacing } from '../../theme/tokens';
 
-const OBJECTIVE_LABELS = ['Clic sur suggestions', 'Rétention J+7'];
+const OBJECTIVE_LABELS = ['Rétention J+7', 'Rétention J+30'];
 
 export function Engagement() {
   const data = useAdamData();
@@ -21,12 +23,19 @@ export function Engagement() {
       </header>
 
       <section style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: spacing.lg }}>
-        <StatCard label="Questions / utilisateur (médiane)" value={usage.questionsPerUser} />
-        <StatCard label="Sessions / utilisateur / sem." value={usage.sessionsPerUser} />
+        <StatCard label="Questions / actif (30 j)" value={usage.questionsPerUser} />
+        <StatCard label="Conversations / actif (30 j)" value={usage.sessionsPerUser} />
         {built.map((o) => (
           <KpiCard key={o.label} objective={o} />
         ))}
       </section>
+
+      <Panel
+        title="Rétention par cohorte d'inscription"
+        subtitle="Part de la cohorte encore active, semaine après semaine. Un point signale une semaine pas encore écoulée."
+      >
+        <CohortTable cohorts={usage.cohorts} />
+      </Panel>
     </div>
   );
 }
