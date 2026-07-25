@@ -308,7 +308,11 @@ export async function fetchAdamData(): Promise<AdamData> {
     supabase.from('dashboard_quota').select('*').maybeSingle<QuotaRow>(),
   ]);
 
-  const responses = [
+  // dashboard_topics est volontairement réservée aux vrais administrateurs
+  // (migration 20260724140000) : la clé anon reçoit « permission denied ». C'est
+  // attendu, pas fatal — le bloc « Sujets » s'affiche simplement vide. On exclut donc
+  // topics du contrôle d'erreur bloquant.
+  const fatalResponses = [
     overviewRes,
     dailyRes,
     statusRes,
@@ -318,10 +322,9 @@ export async function fetchAdamData(): Promise<AdamData> {
     seriesRes,
     demographicsRes,
     qualityRes,
-    topicsRes,
     quotaRes,
   ];
-  for (const res of responses) {
+  for (const res of fatalResponses) {
     if (res.error) throw new Error(res.error.message);
   }
 

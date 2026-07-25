@@ -87,9 +87,9 @@ export const METRIQUES_INDISPONIBLES: MetriqueIndisponible[] = [
   {
     metrique: 'Top sujets et thèmes d’échec',
     raison:
-      'La seule approximation est discussions.title, renseigné pour 6 conversations sur 597. Aucune catégorisation thématique n’est stockée.',
+      'La seule source serait discussions.title, mais ces titres sont rares (6 sur 597) et surtout identifiants : sur les données actuelles, chacun provient d’un unique étudiant. Le bloc Qualité IA ne montre donc qu’un thème partagé par ≥ 5 étudiants distincts, réservé aux administrateurs — vide aujourd’hui, à dessein.',
     requis:
-      'Générer systématiquement le titre de conversation, et idéalement classer chaque conversation dans une taxonomie de sujets côté app.',
+      'Une classification thématique produite côté app (taxonomie de sujets rattachée à chaque conversation), plutôt que des titres bruts, pour obtenir des thèmes agrégés et non-identifiants.',
     dependance: 'app-principale',
   },
   {

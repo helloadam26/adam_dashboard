@@ -49,12 +49,15 @@ export function Quality() {
 
       <Panel
         title="Sujets des conversations"
-        subtitle="D'après le titre généré par l'app"
+        subtitle="Thèmes partagés par au moins 5 étudiants distincts"
       >
         {quality.topics.length === 0 ? (
           <EmptyState>
-            Aucun titre de conversation disponible. Les titres ne sont générés que pour une poignée de
-            conversations ; il faut que l'app ADAM les produise systématiquement pour alimenter ce bloc.
+            Aucun thème à afficher. Pour préserver la vie privée, ce bloc ne montre qu'un titre de
+            conversation partagé par au moins 5 étudiants distincts, et n'est lisible que par un compte
+            administrateur — un titre formulé par une seule personne n'apparaît jamais. Un véritable
+            classement des sujets suppose une classification thématique côté app, pas des titres bruts
+            (voir <em>Paramètres → Métriques non disponibles</em>).
           </EmptyState>
         ) : (
           <RankedList items={quality.topics.map((t) => ({ label: t.title, value: t.n }))} />

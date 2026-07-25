@@ -127,7 +127,14 @@ Les policies RLS des tables applicatives sont toutes de la forme « chacun ses p
 - `20260724120000_dashboard_readonly_views.sql` — `is_dashboard_admin()` (`security definer`) + 7 vues d'agrégats ;
 - `20260724130000_dashboard_metrics_extension.sql` — 4 vues supplémentaires (`demographics`, `quality`, `topics`, `quota`), resserrement des droits sur les vues existantes, et **ouverture temporaire** du prédicat d'accès pour la phase de conception.
 
-Les vues appartiennent à `postgres` (hors RLS des tables sous-jacentes) ; le contrôle d'accès vit dans leur corps (`where is_dashboard_admin()`), pas dans une policy — d'où le badge « Unrestricted » du Table Editor, normal pour une vue. Aucune vue n'expose de contenu de message, d'e-mail ni d'identifiant — **sauf `dashboard_topics`**, qui expose les titres de conversation rédigés par les étudiants (à arbitrer avec le volet vie privée du playbook avant mise en ligne).
+Les vues appartiennent à `postgres` (hors RLS des tables sous-jacentes) ; le contrôle d'accès vit dans leur corps (`where is_dashboard_admin()`), pas dans une policy — d'où le badge « Unrestricted » du Table Editor, normal pour une vue. Aucune vue n'expose de contenu de message, d'e-mail ni d'identifiant.
+
+**Arbitrage `dashboard_topics` (migration `20260724140000`).** C'était la seule vue à laisser sortir du texte rattaché à la conversation d'un étudiant (`discussions.title`). Constat sur les données : les titres existants proviennent chacun d'un unique utilisateur — donnée identifiante, pas agrégat. Deux garde-fous cumulés :
+
+- **accès strict** — la vue s'appuie sur `is_dashboard_admin_strict()` (toujours un vrai contrôle `is_admin`), jamais sur le prédicat ouvert de la phase de conception ; elle est de plus retirée du rôle `anon` ;
+- **k-anonymat** — seuls les titres partagés par au moins 5 étudiants distincts sont renvoyés.
+
+Résultat aujourd'hui : bloc vide, à dessein. Un vrai indicateur « sujets » suppose une classification thématique côté app, pas des titres bruts.
 
 **Phase de conception — authentification désactivée.** `<AuthGate>` est retiré de `App.tsx` et `is_dashboard_admin()` renvoie `true`, le temps de finaliser le dashboard. Conséquence : quiconque a la clé anon (publique, présente dans le bundle) peut lire ces agrégats. La procédure de re-verrouillage est en fin de migration `20260724130000`.
 
