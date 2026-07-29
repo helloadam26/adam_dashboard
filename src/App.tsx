@@ -1,5 +1,6 @@
 import { HashRouter, Route, Routes } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { AuthGate } from './auth/AuthGate';
 import { AdamDataProvider } from './data/AdamDataProvider';
 import { Sidebar } from './components/layout/Sidebar';
 import { Overview } from './sections/Overview/Overview';
@@ -13,17 +14,14 @@ import { Reports } from './sections/Reports/Reports';
 import { Settings } from './sections/Settings/Settings';
 import { colors, font } from './theme/tokens';
 
-// L'authentification est volontairement désactivée le temps de finaliser le dashboard.
-// Pour la réactiver : réintroduire <AuthGate> (src/auth/AuthGate.tsx) autour de
-// <AdamDataProvider>, et restaurer le prédicat de is_dashboard_admin() en base
-// (procédure en fin de migration 20260724130000_dashboard_metrics_extension.sql).
 const queryClient = new QueryClient();
 
 export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <AdamDataProvider>
-        <HashRouter>
+      <AuthGate>
+        <AdamDataProvider>
+          <HashRouter>
           <div
             style={{
               display: 'flex',
@@ -50,8 +48,9 @@ export default function App() {
               </Routes>
             </main>
           </div>
-        </HashRouter>
-      </AdamDataProvider>
+          </HashRouter>
+        </AdamDataProvider>
+      </AuthGate>
     </QueryClientProvider>
   );
 }

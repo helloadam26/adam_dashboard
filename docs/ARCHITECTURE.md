@@ -125,7 +125,8 @@ Le `FiltersContext` de la section 6 reste en attente : sans dimension démograph
 Les policies RLS des tables applicatives sont toutes de la forme « chacun ses propres lignes » (`auth.uid() = user_id`, et `profiles` limité à son propre profil). Aucun agrégat n'est donc lisible depuis le client. Deux migrations composent la couche de lecture :
 
 - `20260724120000_dashboard_readonly_views.sql` — `is_dashboard_admin()` (`security definer`) + 7 vues d'agrégats ;
-- `20260724130000_dashboard_metrics_extension.sql` — 4 vues supplémentaires (`demographics`, `quality`, `topics`, `quota`), resserrement des droits sur les vues existantes, et **ouverture temporaire** du prédicat d'accès pour la phase de conception.
+- `20260724130000_dashboard_metrics_extension.sql` — 4 vues supplémentaires (`demographics`, `quality`, `topics`, `quota`), resserrement des droits sur les vues existantes, et ouverture temporaire du prédicat d'accès (refermée depuis, voir plus bas) ;
+- `20260728190000_reenable_auth_admin_scope.sql` — clôture de la phase de conception : prédicat réel restauré, `anon` retiré, staff dashboard exclu des métriques.
 
 Les vues appartiennent à `postgres` (hors RLS des tables sous-jacentes) ; le contrôle d'accès vit dans leur corps (`where is_dashboard_admin()`), pas dans une policy — d'où le badge « Unrestricted » du Table Editor, normal pour une vue. Aucune vue n'expose de contenu de message, d'e-mail ni d'identifiant.
 
@@ -136,7 +137,19 @@ Les vues appartiennent à `postgres` (hors RLS des tables sous-jacentes) ; le co
 
 Résultat aujourd'hui : bloc vide, à dessein. Un vrai indicateur « sujets » suppose une classification thématique côté app, pas des titres bruts.
 
-**Phase de conception — authentification désactivée.** `<AuthGate>` est retiré de `App.tsx` et `is_dashboard_admin()` renvoie `true`, le temps de finaliser le dashboard. Conséquence : quiconque a la clé anon (publique, présente dans le bundle) peut lire ces agrégats. La procédure de re-verrouillage est en fin de migration `20260724130000`.
+**Authentification (migration `20260728190000`).** La phase de conception est close : `<AuthGate>` protège de nouveau `App.tsx` et `is_dashboard_admin()` revient au vrai contrôle `profiles.is_admin`. Le rôle `anon` n'a plus aucun droit de lecture sur les vues — après connexion, le client interroge en tant que `authenticated`.
+
+Les comptes du dashboard sont **dédiés et distincts des comptes étudiants** : sign-up + login par courriel/mot de passe. Le trigger `on_auth_user_created` (infra de l'app étudiante, non modifié) crée malgré tout une ligne `profiles` à chaque inscription ; les comptes `is_admin = true` sont donc **exclus de tous les agrégats basés sur profiles** (comptes, statuts, démographie, rétention, cohortes) pour ne pas polluer les métriques étudiantes. Un compte connecté mais non `is_admin` reste en état « en attente d'autorisation ».
+
+Provisionnement du premier admin (le sign-up ne l'accorde pas) :
+
+```sql
+update public.profiles p set is_admin = true
+from auth.users u
+where u.id = p.id and u.email = 'TON_COURRIEL';
+```
+
+Reste au périmètre du playbook, non implémenté : 2FA (TOTP) et minuteur d'inactivité.
 
 ---
 

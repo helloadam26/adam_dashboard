@@ -48,7 +48,7 @@ export function Settings() {
         <Row label="Établissement" value={data.meta.university} />
         <Row label="Période couverte" value={data.meta.range} />
         <Row label="Source" value="Supabase · vues dashboard_* en lecture seule" />
-        <Row label="Authentification" value="Désactivée (phase de conception)" />
+        <Row label="Authentification" value="Activée · comptes admin dédiés (2FA à venir)" />
         <Row label="Dernière activité enregistrée" value={data.meta.lastActivity} />
         <Row label="Données chargées le" value={data.meta.updated} />
       </Panel>
