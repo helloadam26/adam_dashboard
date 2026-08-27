@@ -1,4 +1,5 @@
 import { NavLink } from 'react-router-dom';
+import { SignOutButton } from '../../auth/AuthGate';
 import { colors, spacing } from '../../theme/tokens';
 
 const NAV: [string, [string, string][]][] = [
@@ -86,8 +87,18 @@ export function Sidebar() {
         ))}
       </nav>
 
-      <div style={{ padding: spacing.md, borderTop: `1px solid ${colors.line}`, fontSize: 11.5, color: colors.muted }}>
-        Équipe ADAM · pilote automne 2026
+      <div
+        style={{
+          padding: spacing.md,
+          borderTop: `1px solid ${colors.line}`,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: spacing.sm,
+        }}
+      >
+        <span style={{ fontSize: 11.5, color: colors.muted }}>Équipe ADAM</span>
+        <SignOutButton />
       </div>
     </aside>
   );

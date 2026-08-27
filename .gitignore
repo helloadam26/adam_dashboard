@@ -5,3 +5,12 @@ dist
 .DS_Store
 *.local
 .claude/settings.local.json
+
+# Artefacts de compilation TypeScript
+*.tsbuildinfo
+vite.config.js
+vite.config.d.ts
+
+# supabase/ est ignoré par un .gitignore global (règle « Supabase/ »).
+# Les migrations sont la source de vérité du schéma : on les force au commit
+# via `git add -f supabase/migrations`. On n'ajoute rien d'autre du dossier.

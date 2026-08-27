@@ -59,9 +59,9 @@ export function Overview() {
         >
           <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 2 }}>Utilisateurs actifs</div>
           <div style={{ fontSize: 12, color: colors.muted, marginBottom: spacing.md }}>
-            DAU quotidien · repères du calendrier académique
+            DAU quotidien · 90 derniers jours
           </div>
-          <LineChart series={data.usage.dauSeries} events={data.calendar} />
+          <LineChart series={data.usage.dauSeries} />
         </div>
 
         <div
