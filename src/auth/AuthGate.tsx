@@ -14,6 +14,7 @@ import { useEffect, useState, type FormEvent, type ReactNode } from 'react';
 import type { Session } from '@supabase/supabase-js';
 import { supabase } from '../data/supabaseClient';
 import { colors, font, radius, spacing } from '../theme/tokens';
+import adamLogo from '../assets/adam-logo.png';
 
 export function AuthGate({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
@@ -183,7 +184,16 @@ function AuthForm() {
         }}
       >
         <div>
-          <div style={{ fontSize: 16, fontWeight: 700 }}>ADAM · Dashboard interne</div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: spacing.md }}>
+            <img
+              src={adamLogo}
+              alt=""
+              width={40}
+              height={40}
+              style={{ display: 'block', flex: '0 0 auto', objectFit: 'contain' }}
+            />
+            <div style={{ fontSize: 16, fontWeight: 700 }}>ADAM · Dashboard interne</div>
+          </div>
           <div style={{ fontSize: 12, color: colors.muted, marginTop: 4 }}>
             {isVerify
               ? 'Entre le code de confirmation reçu par courriel.'

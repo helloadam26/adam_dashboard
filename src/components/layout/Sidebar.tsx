@@ -1,6 +1,7 @@
 import { NavLink } from 'react-router-dom';
 import { SignOutButton } from '../../auth/AuthGate';
 import { colors, spacing } from '../../theme/tokens';
+import adamLogo from '../../assets/adam-logo.png';
 
 const NAV: [string, [string, string][]][] = [
   ['PILOTAGE', [['/', "Vue d'ensemble"], ['/performance', 'Performance']]],
@@ -24,24 +25,13 @@ export function Sidebar() {
       }}
     >
       <div style={{ padding: '18px 18px 14px', display: 'flex', alignItems: 'center', gap: 10 }}>
-        <div
-          style={{
-            width: 30,
-            height: 30,
-            borderRadius: 8,
-            background: colors.indigo,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            flex: '0 0 auto',
-          }}
-        >
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-            <circle cx="9" cy="10" r="1.6" fill="#fff" />
-            <circle cx="15" cy="10" r="1.6" fill="#fff" />
-            <path d="M8.5 14.3q3.5 2.8 7 0" stroke="#fff" strokeWidth={2} strokeLinecap="round" fill="none" />
-          </svg>
-        </div>
+        <img
+          src={adamLogo}
+          alt="ADAM"
+          width={30}
+          height={30}
+          style={{ display: 'block', flex: '0 0 auto', objectFit: 'contain' }}
+        />
         <div style={{ lineHeight: 1.1 }}>
           <div style={{ fontSize: 15, fontWeight: 700, letterSpacing: '.02em' }}>ADAM</div>
           <div style={{ fontSize: 10.5, fontWeight: 600, color: colors.faint, letterSpacing: '.04em' }}>
