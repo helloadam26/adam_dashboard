@@ -1,14 +1,16 @@
 import { colors, radius, spacing } from '../../theme/tokens';
+import { deltaColor, type DeltaTone } from '../../lib/kpi';
 
 interface StatCardProps {
   label: string;
   value: string | number;
   hint?: string;
   deltaText?: string;
-  deltaUp?: boolean;
+  /** Même règle que les cartes KPI : le vert est réservé à un vrai progrès. */
+  deltaTone?: DeltaTone;
 }
 
-export function StatCard({ label, value, hint, deltaText, deltaUp }: StatCardProps) {
+export function StatCard({ label, value, hint, deltaText, deltaTone = 'none' }: StatCardProps) {
   return (
     <div
       style={{
@@ -27,7 +29,7 @@ export function StatCard({ label, value, hint, deltaText, deltaUp }: StatCardPro
       </span>
       <div style={{ fontSize: 28, fontWeight: 700, fontFamily: "'Montserrat',sans-serif", color: colors.text }}>{value}</div>
       {deltaText && (
-        <div style={{ fontSize: 12, fontWeight: 600, color: deltaUp ? colors.ok : colors.alarm }}>{deltaText}</div>
+        <div style={{ fontSize: 12, fontWeight: 600, color: deltaColor(deltaTone) }}>{deltaText}</div>
       )}
       {hint && <div style={{ fontSize: 11, color: colors.muted }}>{hint}</div>}
     </div>

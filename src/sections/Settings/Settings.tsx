@@ -4,6 +4,8 @@ import {
   METRIQUES_INDISPONIBLES,
   DEPENDANCE_LABELS,
   DEPENDANCE_HINTS,
+  raisonTexte,
+  type ContexteMetriques,
   type Dependance,
 } from '../../data/unavailableMetrics';
 import { colors, radius, spacing } from '../../theme/tokens';
@@ -36,6 +38,15 @@ const DEP_ORDER: Dependance[] = ['app-principale', 'utilisateurs', 'dashboard'];
 
 export function Settings() {
   const data = useAdamData();
+
+  // Les constats chiffrés lisent les mêmes vues que l'onglet Qualité IA : un seul
+  // total pour une seule métrique, d'un onglet à l'autre.
+  const ctx: ContexteMetriques = {
+    comptes: data.users.total,
+    reactions: data.quality.reactionsTotal,
+    reponses: data.quality.assistantMessages,
+    couverture: data.quality.reactionCoverage,
+  };
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: spacing.xl, padding: spacing.xl }}>
@@ -97,7 +108,7 @@ export function Settings() {
                   <div style={{ fontSize: 13, fontWeight: 600, color: colors.text }}>{m.metrique}</div>
                   <div style={{ fontSize: 12, color: colors.muted, marginTop: 4, lineHeight: 1.5 }}>
                     <span style={{ color: colors.faint }}>Pourquoi : </span>
-                    {m.raison}
+                    {raisonTexte(m, ctx)}
                   </div>
                   <div style={{ fontSize: 12, color: colors.muted, marginTop: 3, lineHeight: 1.5 }}>
                     <span style={{ color: colors.faint }}>Requis : </span>

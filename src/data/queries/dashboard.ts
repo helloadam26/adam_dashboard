@@ -20,7 +20,13 @@ export class MissingAdminAccessError extends Error {
   }
 }
 
-/** Cibles du pilote, issues du playbook — elles ne vivent pas en base. */
+/**
+ * Lancement officiel du pilote. Les cibles ci-dessous sont des cibles de *fin* de
+ * pilote : avant cette date, les mesurer rend tout rouge par construction.
+ */
+const PILOT_LAUNCH = '2026-09-01';
+
+/** Cibles de fin de pilote, issues du playbook — elles ne vivent pas en base. */
 const TARGETS = {
   usersTotal: 240,
   wau: 100,
@@ -76,11 +82,16 @@ interface AgentRow {
   questions: number;
 }
 
+/**
+ * `null` quand aucun compte ne tombe dans la fenêtre d'inscription observée : il n'y
+ * a alors pas de cohorte à mesurer, ce qui n'est pas une rétention de 0 %
+ * (migration 20260905120000).
+ */
 interface RetentionRow {
-  d7: number;
-  d7_prev: number;
-  d30: number;
-  d30_prev: number;
+  d7: number | null;
+  d7_prev: number | null;
+  d30: number | null;
+  d30_prev: number | null;
 }
 
 interface CohortRow {
@@ -138,6 +149,22 @@ const NON_RENSEIGNE = 'Non renseigné';
 
 function formatDay(iso: string): string {
   return new Date(`${iso}T00:00:00`).toLocaleDateString('fr-CA', { day: 'numeric', month: 'short' });
+}
+
+function formatFullDay(iso: string): string {
+  return new Date(`${iso}T00:00:00`).toLocaleDateString('fr-CA', {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  });
+}
+
+/**
+ * Le pilote a-t-il commencé ? Tant qu'il n'a pas démarré, comparer l'état actuel à
+ * des cibles de fin de pilote n'informe personne.
+ */
+function pilotPhase(): 'avant-lancement' | 'en-cours' {
+  return Date.now() >= new Date(`${PILOT_LAUNCH}T00:00:00`).getTime() ? 'en-cours' : 'avant-lancement';
 }
 
 function formatDateTime(iso: string | null): string {
@@ -217,11 +244,14 @@ function buildObjectiveList(
   retention: RetentionRow,
   quality: QualityRow,
 ): Objective[] {
-  const stickiness = overview.mau ? overview.dau / overview.mau : 0;
-  const stickinessPrev = overview.mau_prev ? overview.dau_prev / overview.mau_prev : 0;
-  const satisfaction = pct(quality.likes, quality.likes + quality.dislikes) ?? 0;
-  const satisfactionPrev = pct(quality.likes_prev, quality.likes_prev + quality.dislikes_prev) ?? 0;
-  const firstResolution = pct(quality.one_question_discussions, quality.answered_discussions) ?? 0;
+  // `null` plutôt que 0 quand le dénominateur est vide : sans réaction, la
+  // satisfaction est inconnue, pas nulle. La ramener à 0 la ferait compter comme un
+  // écart à la cible et basculerait à elle seule le verdict de santé du pilote.
+  const stickiness = overview.mau ? Number((overview.dau / overview.mau).toFixed(2)) : null;
+  const stickinessPrev = overview.mau_prev ? Number((overview.dau_prev / overview.mau_prev).toFixed(2)) : null;
+  const satisfaction = pct(quality.likes, quality.likes + quality.dislikes);
+  const satisfactionPrev = pct(quality.likes_prev, quality.likes_prev + quality.dislikes_prev);
+  const firstResolution = pct(quality.one_question_discussions, quality.answered_discussions);
 
   return [
     {
@@ -254,8 +284,8 @@ function buildObjectiveList(
     },
     {
       label: 'Stickiness (DAU/MAU)',
-      actual: Number(stickiness.toFixed(2)),
-      prev: Number(stickinessPrev.toFixed(2)),
+      actual: stickiness,
+      prev: stickinessPrev,
       target: TARGETS.stickiness,
       unit: '',
       dec: 2,
@@ -268,9 +298,11 @@ function buildObjectiveList(
       unit: '%',
     },
     {
+      // Aucune fenêtre précédente n'est calculée par la vue : pas de comparaison
+      // possible. `prev: firstResolution` affichait un « +0 » vert permanent.
       label: 'Résolution 1er échange',
       actual: firstResolution,
-      prev: firstResolution,
+      prev: null,
       target: TARGETS.firstResolution,
       unit: '%',
     },
@@ -352,6 +384,8 @@ export async function fetchAdamData(): Promise<AdamData> {
       updated: formatDateTime(new Date().toISOString()),
       lastActivity: formatDateTime(overview.last_activity),
       activeNow: overview.active_now,
+      phase: pilotPhase(),
+      launchDate: formatFullDay(PILOT_LAUNCH),
     },
 
     dates: daily.map((d) => formatDay(d.day)),

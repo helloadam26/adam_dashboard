@@ -10,8 +10,13 @@
 
 export interface Objective {
   label: string;
-  actual: number;
-  prev: number;
+  /**
+   * `null` quand la métrique n'a aucune donnée derrière elle (dénominateur vide).
+   * Une absence de mesure n'est pas une valeur de 0 : elle ne doit ni compter comme
+   * un écart à la cible, ni peser sur le verdict de santé du pilote.
+   */
+  actual: number | null;
+  prev: number | null;
   target: number;
   unit: string;
   dec?: number;
@@ -74,6 +79,14 @@ export interface AdamData {
     /** Dernier message reçu, toutes conversations confondues. */
     lastActivity: string;
     activeNow: number;
+    /**
+     * Phase du pilote. Avant le lancement officiel, les cibles — qui sont des cibles
+     * de *fin* de pilote — ne sont pas encore exigibles : aucun verdict de santé
+     * n'est rendu.
+     */
+    phase: 'avant-lancement' | 'en-cours';
+    /** Date de lancement officiel du pilote, formatée pour l'affichage. */
+    launchDate: string;
   };
   /** Étiquettes des 90 derniers jours, alignées sur toutes les séries quotidiennes. */
   dates: string[];
@@ -96,10 +109,11 @@ export interface AdamData {
     dauSeries: number[];
     wauSeries: number[];
     mauSeries: number[];
-    retentionD7: number;
-    retentionD7Prev: number;
-    retentionD30: number;
-    retentionD30Prev: number;
+    /** `null` quand aucune cohorte n'est encore observable sur la fenêtre. */
+    retentionD7: number | null;
+    retentionD7Prev: number | null;
+    retentionD30: number | null;
+    retentionD30Prev: number | null;
     stickiness: number;
     sessionsPerUser: number;
     questionsPerUser: number;

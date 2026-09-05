@@ -1,7 +1,6 @@
 import { useAdamData } from '../../data/useAdamData';
 import { buildObjectives, pilotHealth } from '../../lib/kpi';
 import { LineChart } from '../../components/charts/LineChart';
-import { Ring } from '../../components/charts/Ring';
 import { KpiCard } from '../../components/kpi/KpiCard';
 import { ObjectivesPanel } from '../../components/kpi/ObjectivesPanel';
 import { colors, radius, spacing } from '../../theme/tokens';
@@ -11,7 +10,7 @@ const CRITICAL_LABELS = ['Comptes créés', 'Utilisateurs actifs (WAU)', 'Réten
 export function Overview() {
   const data = useAdamData();
   const built = buildObjectives(data.objectives);
-  const health = pilotHealth(built);
+  const health = pilotHealth(built, data.meta.phase);
   const critical = built.filter((b) => CRITICAL_LABELS.includes(b.label));
 
   return (
@@ -34,7 +33,9 @@ export function Overview() {
             }}
           >
             <span style={{ width: 7, height: 7, borderRadius: 99, background: health.color }} />
-            Santé du pilote : {health.label}
+            {data.meta.phase === 'avant-lancement'
+              ? `Pilote : ${health.label} (${data.meta.launchDate})`
+              : `Santé du pilote : ${health.label}`}
           </span>
         </div>
         <p style={{ color: colors.muted, fontSize: 13, margin: '4px 0 0' }}>
@@ -48,43 +49,23 @@ export function Overview() {
         ))}
       </section>
 
-      <section style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: spacing.lg }}>
-        <div
-          style={{
-            background: colors.panel,
-            border: `1px solid ${colors.line}`,
-            borderRadius: radius.lg,
-            padding: spacing.lg,
-          }}
-        >
-          <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 2 }}>Utilisateurs actifs</div>
-          <div style={{ fontSize: 12, color: colors.muted, marginBottom: spacing.md }}>
-            DAU quotidien · 90 derniers jours
-          </div>
-          <LineChart series={data.usage.dauSeries} />
+      <section
+        style={{
+          background: colors.panel,
+          border: `1px solid ${colors.line}`,
+          borderRadius: radius.lg,
+          padding: spacing.lg,
+        }}
+      >
+        <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 2 }}>Utilisateurs actifs</div>
+        <div style={{ fontSize: 12, color: colors.muted, marginBottom: spacing.md }}>
+          DAU quotidien · 90 derniers jours
         </div>
-
-        <div
-          style={{
-            background: colors.panel,
-            border: `1px solid ${colors.line}`,
-            borderRadius: radius.lg,
-            padding: spacing.lg,
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            justifyContent: 'center',
-          }}
-        >
-          <div style={{ fontSize: 13, fontWeight: 700, alignSelf: 'flex-start', marginBottom: spacing.sm }}>
-            % Objectifs atteints
-          </div>
-          <Ring value={health.achieved} total={health.total} color={health.color} />
-        </div>
+        <LineChart series={data.usage.dauSeries} />
       </section>
 
       <section>
-        <ObjectivesPanel built={built} />
+        <ObjectivesPanel built={built} phase={data.meta.phase} launchDate={data.meta.launchDate} />
       </section>
     </div>
   );
