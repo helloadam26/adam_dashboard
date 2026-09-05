@@ -69,7 +69,7 @@ interface DailyRow {
 }
 
 interface StatusRow {
-  status: 'active' | 'dormant' | 'never_active';
+  status: 'active' | 'dormant' | 'untracked' | 'never_active';
   n: number;
 }
 
@@ -178,13 +178,22 @@ function formatDateTime(iso: string | null): string {
   });
 }
 
+/**
+ * Depuis la migration 20260905210000, l'activité se lit sur deux signaux : les
+ * messages conservés et le quota de questions consommé. Le second survit à la
+ * suppression d'une conversation, d'où le statut `untracked`.
+ */
 const STATUS_LABELS: Record<StatusRow['status'], { label: string; hint: string }> = {
-  active: { label: 'Actifs', hint: 'au moins un message ces 30 jours' },
-  dormant: { label: 'Dormants', hint: 'aucun message depuis plus de 30 jours' },
-  never_active: { label: 'Jamais actifs', hint: 'compte créé, aucun message envoyé' },
+  active: { label: 'Actifs', hint: 'une question posée ces 30 jours' },
+  dormant: { label: 'Dormants', hint: 'aucune activité depuis plus de 30 jours' },
+  untracked: {
+    label: 'Usage sans historique',
+    hint: 'ont consommé leur quota de questions, mais aucune conversation n’est conservée',
+  },
+  never_active: { label: 'Jamais actifs', hint: 'compte créé, aucune question posée' },
 };
 
-const STATUS_ORDER: StatusRow['status'][] = ['active', 'dormant', 'never_active'];
+const STATUS_ORDER: StatusRow['status'][] = ['active', 'dormant', 'untracked', 'never_active'];
 
 function buildStatus(rows: StatusRow[]): StatusItem[] {
   return STATUS_ORDER.map((status) => ({

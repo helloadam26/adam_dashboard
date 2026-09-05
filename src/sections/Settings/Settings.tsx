@@ -48,6 +48,8 @@ export function Settings() {
     couverture: data.quality.reactionCoverage,
   };
 
+  const untracked = data.users.status.find((s) => s.label === 'Usage sans historique')?.n ?? 0;
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: spacing.xl, padding: spacing.xl }}>
       <header>
@@ -62,6 +64,48 @@ export function Settings() {
         <Row label="Authentification" value="Activée · comptes admin dédiés (2FA à venir)" />
         <Row label="Dernière activité enregistrée" value={data.meta.lastActivity} />
         <Row label="Données chargées le" value={data.meta.updated} />
+      </Panel>
+
+      <Panel
+        title="Deux compteurs, deux vérités"
+        subtitle="Pourquoi certains chiffres ne se recoupent pas — et pourquoi c'est normal"
+      >
+        <div style={{ fontSize: 12.5, color: colors.muted, lineHeight: 1.7 }}>
+          <p style={{ margin: '0 0 10px' }}>
+            L'usage d'ADAM se mesure de deux façons, et elles ne donnent pas le même total.
+            Les <strong style={{ color: colors.text }}>questions décomptées du quota</strong> comptent
+            ce qui a été demandé : ce compteur doit survivre à la suppression d'une conversation,
+            sinon le plafond quotidien se contournerait en effaçant son historique. Les{' '}
+            <strong style={{ color: colors.text }}>questions conservées</strong> comptent ce qui reste
+            réellement en base.
+          </p>
+          <p style={{ margin: '0 0 10px' }}>
+            Sur les 30 derniers jours :{' '}
+            <strong style={{ color: colors.text }}>
+              {data.quota.counted30d.toLocaleString('fr-CA')} questions décomptées
+            </strong>{' '}
+            pour{' '}
+            <strong style={{ color: colors.text }}>
+              {data.usage.questionsStored30d.toLocaleString('fr-CA')} conservées
+            </strong>
+            . L'écart n'est pas une erreur de comptage : il mesure ce que les étudiants ont effacé.
+          </p>
+          {untracked > 0 && (
+            <p style={{ margin: '0 0 10px' }}>
+              <strong style={{ color: colors.peri }}>{untracked} compte(s)</strong> ont consommé leur
+              quota sans qu'aucune conversation ne subsiste. Ils apparaissaient auparavant comme
+              « jamais actifs », ce qui était faux — ils ont bien utilisé ADAM. Ils forment désormais
+              la part <strong style={{ color: colors.peri }}>« Usage sans historique »</strong> du
+              graphique des statuts, plutôt que d'être fondus dans les actifs : compter leur usage sans
+              le signaler masquerait le fait qu'on ne sait plus ce qu'ils ont demandé.
+            </p>
+          )}
+          <p style={{ margin: 0 }}>
+            À retenir pour lire le reste du dashboard : tout ce qui dérive des messages —
+            conversations, sujets, satisfaction, résolution — porte sur ce qui a été conservé, et
+            sous-estime donc l'usage réel. Les indicateurs de quota, eux, sont complets.
+          </p>
+        </div>
       </Panel>
 
       <Panel

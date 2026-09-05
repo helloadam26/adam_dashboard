@@ -56,10 +56,15 @@ function serie(max: number, seed: number): number[] {
   return out;
 }
 
-const statut = (a: number, d: number, n: number): StatusItem[] => [
-  { label: 'Actifs', n: a, hint: 'au moins un message ces 30 jours' },
-  { label: 'Dormants', n: d, hint: 'aucun message depuis plus de 30 jours' },
-  { label: 'Jamais actifs', n, hint: 'compte créé, aucun message envoyé' },
+const statut = (a: number, d: number, u: number, n: number): StatusItem[] => [
+  { label: 'Actifs', n: a, hint: 'une question posée ces 30 jours' },
+  { label: 'Dormants', n: d, hint: 'aucune activité depuis plus de 30 jours' },
+  {
+    label: 'Usage sans historique',
+    n: u,
+    hint: 'ont consommé leur quota de questions, mais aucune conversation n’est conservée',
+  },
+  { label: 'Jamais actifs', n, hint: 'compte créé, aucune question posée' },
 ];
 
 const vide: Distribution = { renseigne: false, items: [], manquants: 0 };
@@ -92,7 +97,7 @@ function base(): AdamData {
       new7: 0,
       newToday: 0,
       signups: serie(2, 7),
-      status: statut(0, 0, 0),
+      status: statut(0, 0, 0, 0),
       byFaculty: vide,
       byProgram: vide,
       byYear: vide,
@@ -160,7 +165,7 @@ export function fixture(id: ScenarioId): AdamData {
     d.users.total = 82;
     d.users.new7 = 6;
     d.users.newToday = 0;
-    d.users.status = statut(1, 3, 78);
+    d.users.status = statut(1, 3, 0, 78);
     d.usage.dau = 1;
     d.usage.wau = 1;
     d.usage.mau = 2;
@@ -187,7 +192,7 @@ export function fixture(id: ScenarioId): AdamData {
     d.users.total = 82;
     d.users.new7 = 1;
     d.users.newToday = 0;
-    d.users.status = statut(1, 2, 79);
+    d.users.status = statut(1, 2, 1, 78);
     d.usage.dau = 1;
     d.usage.wau = 1;
     d.usage.mau = 1;
@@ -232,7 +237,7 @@ export function fixture(id: ScenarioId): AdamData {
     d.users.total = 251;
     d.users.new7 = 18;
     d.users.newToday = 3;
-    d.users.status = statut(147, 62, 42);
+    d.users.status = statut(147, 62, 9, 33);
     d.users.byFaculty = remplie([['Génie', 71], ['Sciences de la santé', 58], ['Sciences sociales', 49], ['Droit', 31]], 42);
     d.users.byYear = remplie([['1re année', 88], ['2e année', 64], ['3e année', 41], ['4e année', 16]], 42);
     d.users.byResidency = remplie([['Canadian', 163], ['International', 46]], 42);
@@ -300,7 +305,7 @@ export function fixture(id: ScenarioId): AdamData {
   d.users.total = 82;
   d.users.new7 = 4;
   d.users.newToday = 0;
-  d.users.status = statut(2, 5, 75);
+  d.users.status = statut(7, 44, 6, 29);
   d.usage.dau = 1;
   d.usage.wau = 1;
   d.usage.mau = 2;
