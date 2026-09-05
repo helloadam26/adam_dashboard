@@ -117,6 +117,8 @@ export interface AdamData {
     stickiness: number;
     sessionsPerUser: number;
     questionsPerUser: number;
+    /** Questions encore stockées sur 30 jours — à comparer à `quota.counted30d`. */
+    questionsStored30d: number;
     cohorts: Cohort[];
     conversations: {
       perDay: number[];
@@ -144,15 +146,33 @@ export interface AdamData {
   };
   /** Facultés et services — la table s'appelle encore `agents` côté app. */
   faculties: AgentUsage[];
-  tokens: {
-    total: number;
-    last30: number;
+  /**
+   * Quota quotidien de questions. La colonne source s'appelle `daily_tokens.tokens_used`,
+   * mais elle ne compte pas des tokens LLM : vérifié le 5 septembre 2026, elle égale
+   * exactement le nombre de questions posées dans la journée sur 151 des 162
+   * jours-utilisateur comparés, et son plafond `tokens_limit` vaut 10 par défaut.
+   *
+   * Ce compteur diverge des questions encore stockées dans `messages` (639 contre 594
+   * au total, 106 contre 33 sur 30 jours) : il persiste quand une conversation
+   * disparaît. Les deux mesures sont donc distinctes et toutes deux exactes —
+   * « décomptées du quota » d'un côté, « encore conservées » de l'autre.
+   */
+  quota: {
+    /** Questions décomptées du quota, cumul depuis le début. */
+    counted: number;
+    counted30d: number;
     perDay: number[];
-    avgPerActiveUser: number;
-    avgLimit: number;
-    avgUsed: number;
+    /**
+     * Plafond quotidien usuel (le mode, pas la moyenne). Un unique compte à 1000
+     * tirait la moyenne à 13,3 alors que le plafond rencontré est 10.
+     */
+    usualLimit: number;
+    /** Questions par jour réellement actif — les jours à zéro sont exclus. */
+    avgUsedOnActiveDays: number;
+    /** Jours actifs où le plafond a été atteint. */
     daysAtLimit: number;
     usersAtLimit: number;
-    userDays: number;
+    /** Jours-utilisateur avec au moins une question — dénominateur des deux ci-dessus. */
+    activeDays: number;
   };
 }

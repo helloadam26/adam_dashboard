@@ -112,6 +112,7 @@ function base(): AdamData {
       stickiness: 0,
       sessionsPerUser: 0,
       questionsPerUser: 0,
+      questionsStored30d: 0,
       cohorts: [],
       conversations: { perDay: serie(6, 19), total: 0, avgLength: 0, byFaculty: [] },
     },
@@ -130,16 +131,15 @@ function base(): AdamData {
       topics: [],
     },
     faculties: [],
-    tokens: {
-      total: 0,
-      last30: 0,
+    quota: {
+      counted: 0,
+      counted30d: 0,
       perDay: serie(4, 23),
-      avgPerActiveUser: 0,
-      avgLimit: 0,
-      avgUsed: 0,
+      usualLimit: 10,
+      avgUsedOnActiveDays: 0,
       daysAtLimit: 0,
       usersAtLimit: 0,
-      userDays: 0,
+      activeDays: 0,
     },
   };
 }
@@ -167,6 +167,7 @@ export function fixture(id: ScenarioId): AdamData {
     d.usage.stickiness = 0.5;
     d.usage.sessionsPerUser = 28;
     d.usage.questionsPerUser = 34.5;
+    d.usage.questionsStored30d = 0;
     d.usage.conversations.total = 56;
     d.usage.conversations.avgLength = 7.59;
     d.quality.assistantMessages = 574;
@@ -193,6 +194,7 @@ export function fixture(id: ScenarioId): AdamData {
     d.usage.stickiness = 1;
     d.usage.sessionsPerUser = 28;
     d.usage.questionsPerUser = 34.5;
+    d.usage.questionsStored30d = 28;
     d.usage.retentionD7 = 50;
     d.usage.retentionD7Prev = null;
     d.usage.conversations.total = 28;
@@ -213,7 +215,7 @@ export function fixture(id: ScenarioId): AdamData {
     d.quality.satisfactionPrev = null;
     d.quality.firstResolution = null;
     d.faculties = [{ ...FACULTES[0], conversations: 28, users: 1, questions: 213 }];
-    d.tokens = { ...d.tokens, total: 536, last30: 3, avgPerActiveUser: 3, avgLimit: 50, avgUsed: 12.4, daysAtLimit: 0, usersAtLimit: 0, userDays: 43 };
+    d.quota = { ...d.quota, counted: 213, counted30d: 34, usualLimit: 10, avgUsedOnActiveDays: 4.2, daysAtLimit: 2, usersAtLimit: 1, activeDays: 21 };
     d.objectives = [
       { label: 'Comptes créés', actual: 82, prev: 82, target: 240, unit: '' },
       { label: 'Utilisateurs actifs (WAU)', actual: 1, prev: 0, target: 100, unit: '' },
@@ -240,6 +242,7 @@ export function fixture(id: ScenarioId): AdamData {
     d.usage.stickiness = 0.26;
     d.usage.sessionsPerUser = 6.4;
     d.usage.questionsPerUser = 14.2;
+    d.usage.questionsStored30d = 3_980;
     d.usage.retentionD7 = 41;
     d.usage.retentionD7Prev = 36;
     d.usage.retentionD30 = 24;
@@ -280,7 +283,7 @@ export function fixture(id: ScenarioId): AdamData {
       users: [58, 44, 31, 22][i],
       questions: [5182, 3841, 2890, 1791][i],
     }));
-    d.tokens = { ...d.tokens, total: 184_920, last30: 61_340, avgPerActiveUser: 417.3, avgLimit: 50, avgUsed: 31.8, daysAtLimit: 214, usersAtLimit: 47, userDays: 3921 };
+    d.quota = { ...d.quota, counted: 12_840, counted30d: 4_310, usualLimit: 10, avgUsedOnActiveDays: 6.8, daysAtLimit: 214, usersAtLimit: 47, activeDays: 1904 };
     d.objectives = [
       { label: 'Comptes créés', actual: 251, prev: 233, target: 240, unit: '' },
       { label: 'Utilisateurs actifs (WAU)', actual: 112, prev: 98, target: 100, unit: '' },
@@ -304,6 +307,7 @@ export function fixture(id: ScenarioId): AdamData {
   d.usage.stickiness = 0.5;
   d.usage.sessionsPerUser = 28;
   d.usage.questionsPerUser = 34.5;
+  d.usage.questionsStored30d = 33;
   d.usage.retentionD7 = 0;
   d.usage.retentionD7Prev = 0;
   d.usage.retentionD30 = null;
@@ -337,7 +341,7 @@ export function fixture(id: ScenarioId): AdamData {
     users: [2, 1, 1][i],
     questions: [2588, 1184, 926][i],
   }));
-  d.tokens = { ...d.tokens, total: 536, last30: 3, avgPerActiveUser: 1.5, avgLimit: 50, avgUsed: 8.2, daysAtLimit: 0, usersAtLimit: 0, userDays: 61 };
+  d.quota = { ...d.quota, counted: 639, counted30d: 106, usualLimit: 10, avgUsedOnActiveDays: 3.5, daysAtLimit: 12, usersAtLimit: 4, activeDays: 184 };
   d.objectives = [
     { label: 'Comptes créés', actual: 82, prev: 82, target: 240, unit: '' },
     { label: 'Utilisateurs actifs (WAU)', actual: 1, prev: 0, target: 100, unit: '' },

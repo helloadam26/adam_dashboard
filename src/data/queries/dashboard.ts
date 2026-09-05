@@ -363,17 +363,17 @@ export async function fetchAdamData(): Promise<AdamData> {
   const overview = overviewRes.data;
   const retention = retentionRes.data;
   const quality = qualityRes.data;
-  const quota = quotaRes.data;
+  const quotaRow = quotaRes.data;
 
   // Ces quatre vues renvoient toujours exactement une ligne quand l'accès est ouvert.
-  if (!overview || !retention || !quality || !quota) throw new MissingAdminAccessError();
+  if (!overview || !retention || !quality || !quotaRow) throw new MissingAdminAccessError();
 
   const daily = dailyRes.data ?? [];
   const series = seriesRes.data ?? [];
   const faculties = facultiesRes.data ?? [];
   const demographics = demographicsRes.data ?? [];
 
-  const tokens30 = num(overview.tokens_30d);
+  const quotaCounted30d = num(overview.tokens_30d);
   const reactionsTotal = quality.likes + quality.dislikes;
 
   return {
@@ -418,6 +418,7 @@ export async function fetchAdamData(): Promise<AdamData> {
       stickiness: overview.mau ? Number((overview.dau / overview.mau).toFixed(2)) : 0,
       sessionsPerUser: overview.mau ? Number((overview.conversations_30d / overview.mau).toFixed(1)) : 0,
       questionsPerUser: overview.mau ? Number((overview.questions_30d / overview.mau).toFixed(1)) : 0,
+      questionsStored30d: overview.questions_30d,
       cohorts: buildCohorts(cohortsRes.data ?? []),
       conversations: {
         perDay: daily.map((d) => d.conversations),
@@ -453,16 +454,20 @@ export async function fetchAdamData(): Promise<AdamData> {
       questions: a.questions,
     })),
 
-    tokens: {
-      total: num(overview.tokens_total),
-      last30: tokens30,
+    // `tokens_*` en base = compteur de quota de questions, pas des tokens LLM.
+    // Le renommage s'arrête au contrat de données : la colonne appartient à l'app
+    // étudiante, qui l'écrit sous son nom d'origine.
+    quota: {
+      counted: num(overview.tokens_total),
+      counted30d: quotaCounted30d,
       perDay: daily.map((d) => d.tokens),
-      avgPerActiveUser: overview.mau ? Number((tokens30 / overview.mau).toFixed(1)) : 0,
-      avgLimit: num(quota.avg_limit),
-      avgUsed: num(quota.avg_used),
-      daysAtLimit: quota.days_at_limit,
-      usersAtLimit: quota.users_at_limit,
-      userDays: quota.user_days,
+      // Colonnes conservées sous leurs noms de vue ; leur contenu a changé en
+      // migration 20260905190000 (mode au lieu de moyenne, jours actifs seulement).
+      usualLimit: num(quotaRow.avg_limit),
+      avgUsedOnActiveDays: num(quotaRow.avg_used),
+      daysAtLimit: quotaRow.days_at_limit,
+      usersAtLimit: quotaRow.users_at_limit,
+      activeDays: quotaRow.user_days,
     },
   };
 }

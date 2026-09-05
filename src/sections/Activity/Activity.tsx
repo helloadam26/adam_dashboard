@@ -6,7 +6,7 @@ import { colors, spacing } from '../../theme/tokens';
 
 export function Activity() {
   const data = useAdamData();
-  const { usage, tokens } = data;
+  const { usage, quota } = data;
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: spacing.xl, padding: spacing.xl }}>
@@ -35,10 +35,45 @@ export function Activity() {
       </Panel>
 
       <Panel
-        title="Tokens consommés par jour"
-        subtitle={`${tokens.last30.toLocaleString('fr-CA')} tokens sur 30 jours · ${tokens.total.toLocaleString('fr-CA')} depuis le lancement`}
+        title="Questions décomptées du quota, par jour"
+        subtitle={
+          `${quota.counted30d.toLocaleString('fr-CA')} questions décomptées sur 30 jours · ` +
+          `${quota.counted.toLocaleString('fr-CA')} au total. Unité : une question posée, décomptée d'un ` +
+          `plafond quotidien usuel de ${quota.usualLimit.toLocaleString('fr-CA')}. Ce ne sont pas des tokens ` +
+          `de modèle ni un coût.`
+        }
       >
-        <LineChart series={tokens.perDay} color={colors.warn} />
+        <LineChart series={quota.perDay} color={colors.warn} />
+
+        {/* Le compteur de quota persiste quand une conversation disparaît : les deux
+            mesures divergent, et masquer l'écart reviendrait à en cacher une. */}
+        {quota.counted30d > usage.questionsStored30d && (
+          <div style={{ fontSize: 12, color: colors.muted, marginTop: spacing.md, lineHeight: 1.6 }}>
+            Sur ces 30 jours, {quota.counted30d.toLocaleString('fr-CA')} questions ont été décomptées mais{' '}
+            {usage.questionsStored30d.toLocaleString('fr-CA')} sont encore stockées. Le compteur de quota
+            survit à la suppression d'une conversation : l'écart mesure ce que les étudiants ont effacé,
+            pas une erreur de comptage.
+          </div>
+        )}
+      </Panel>
+
+      <Panel
+        title="Pression du plafond quotidien"
+        subtitle="Un plafond souvent atteint bride l'usage avant que les autres indicateurs ne le montrent"
+      >
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: spacing.lg }}>
+          <StatCard
+            label="Consommation moyenne"
+            value={`${quota.avgUsedOnActiveDays.toLocaleString('fr-CA')} / ${quota.usualLimit.toLocaleString('fr-CA')}`}
+            hint="questions par jour actif, sur le plafond usuel"
+          />
+          <StatCard
+            label="Jours au plafond"
+            value={quota.daysAtLimit}
+            hint={`sur ${quota.activeDays.toLocaleString('fr-CA')} jours actifs`}
+          />
+          <StatCard label="Comptes ayant atteint le plafond" value={quota.usersAtLimit} hint="au moins une fois" />
+        </div>
       </Panel>
     </div>
   );
