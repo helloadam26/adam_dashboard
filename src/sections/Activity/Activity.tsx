@@ -28,8 +28,8 @@ export function Activity() {
       </Panel>
 
       <Panel
-        title="Conversations ouvertes par jour"
-        subtitle={`${usage.conversations.total.toLocaleString('fr-CA')} conversations depuis le lancement · ${usage.conversations.avgLength} questions par conversation en moyenne`}
+        title="Conversations par jour"
+        subtitle={`${usage.conversations.total.toLocaleString('fr-CA')} conversations au total · ${usage.conversations.avgLength} questions par conversation en moyenne. Une conversation est comptée dès qu'une question y a été posée : ouvrir un espace facultaire sans rien demander n'en crée pas.`}
       >
         <LineChart series={usage.conversations.perDay} color={colors.peri} />
       </Panel>
