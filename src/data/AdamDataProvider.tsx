@@ -41,6 +41,14 @@ export function AdamDataProvider({ children }: { children: ReactNode }) {
   return <AdamDataContext.Provider value={data}>{children}</AdamDataContext.Provider>;
 }
 
+/**
+ * Fournit un `AdamData` déjà constitué, sans requête ni authentification. Sert au
+ * mode fixtures (développement uniquement) — voir `src/dev/FixturesMode.tsx`.
+ */
+export function StaticAdamDataProvider({ data, children }: { data: AdamData; children: ReactNode }) {
+  return <AdamDataContext.Provider value={data}>{children}</AdamDataContext.Provider>;
+}
+
 export function useAdamData(): AdamData {
   const data = useContext(AdamDataContext);
   if (!data) throw new Error('useAdamData doit être utilisé dans un <AdamDataProvider>.');

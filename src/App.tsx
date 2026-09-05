@@ -2,6 +2,7 @@ import { HashRouter, Route, Routes } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AuthGate } from './auth/AuthGate';
 import { AdamDataProvider } from './data/AdamDataProvider';
+import { FixturesMode, FIXTURES_ENABLED } from './dev/FixturesMode';
 import { Sidebar } from './components/layout/Sidebar';
 import { Overview } from './sections/Overview/Overview';
 import { Users } from './sections/Users/Users';
@@ -16,39 +17,56 @@ import { colors, font } from './theme/tokens';
 
 const queryClient = new QueryClient();
 
+function Shell() {
+  return (
+    <HashRouter>
+      <div
+        style={{
+          display: 'flex',
+          height: '100%',
+          overflow: 'hidden',
+          fontFamily: font,
+          color: colors.text,
+          background: colors.bg,
+          fontVariantNumeric: 'tabular-nums',
+        }}
+      >
+        <Sidebar />
+        <main style={{ flex: 1, overflowY: 'auto' }}>
+          <Routes>
+            <Route path="/" element={<Overview />} />
+            <Route path="/performance" element={<Performance />} />
+            <Route path="/users" element={<Users />} />
+            <Route path="/faculties" element={<Faculties />} />
+            <Route path="/activity" element={<Activity />} />
+            <Route path="/engagement" element={<Engagement />} />
+            <Route path="/quality" element={<Quality />} />
+            <Route path="/reports" element={<Reports />} />
+            <Route path="/settings" element={<Settings />} />
+          </Routes>
+        </main>
+      </div>
+    </HashRouter>
+  );
+}
+
 export default function App() {
+  // Développement uniquement : ni requête, ni authentification, données inventées.
+  if (FIXTURES_ENABLED) {
+    return (
+      <FixturesMode>
+        <Shell />
+      </FixturesMode>
+    );
+  }
+
   return (
     <QueryClientProvider client={queryClient}>
       <AuthGate>
         <AdamDataProvider>
-          <HashRouter>
-          <div
-            style={{
-              display: 'flex',
-              height: '100vh',
-              overflow: 'hidden',
-              fontFamily: font,
-              color: colors.text,
-              background: colors.bg,
-              fontVariantNumeric: 'tabular-nums',
-            }}
-          >
-            <Sidebar />
-            <main style={{ flex: 1, overflowY: 'auto' }}>
-              <Routes>
-                <Route path="/" element={<Overview />} />
-                <Route path="/performance" element={<Performance />} />
-                <Route path="/users" element={<Users />} />
-                <Route path="/faculties" element={<Faculties />} />
-                <Route path="/activity" element={<Activity />} />
-                <Route path="/engagement" element={<Engagement />} />
-                <Route path="/quality" element={<Quality />} />
-                <Route path="/reports" element={<Reports />} />
-                <Route path="/settings" element={<Settings />} />
-              </Routes>
-            </main>
+          <div style={{ height: '100vh' }}>
+            <Shell />
           </div>
-          </HashRouter>
         </AdamDataProvider>
       </AuthGate>
     </QueryClientProvider>
