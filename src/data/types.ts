@@ -8,6 +8,8 @@
  * n'ont aucun support en base — sont recensées dans `unavailableMetrics.ts`.
  */
 
+import type { Sample } from '../lib/sample';
+
 export interface Objective {
   label: string;
   /**
@@ -20,6 +22,11 @@ export interface Objective {
   target: number;
   unit: string;
   dec?: number;
+  /**
+   * Observations derrière la valeur, quand c'est un ratio. Absent pour un compte
+   * absolu — « 86 comptes créés » n'a pas d'échantillon, c'est la mesure elle-même.
+   */
+  sample?: Sample;
 }
 
 export interface StatusItem {
@@ -40,6 +47,8 @@ export interface NamedCount {
 
 export interface Cohort {
   label: string;
+  /** Taille de la cohorte — dénominateur de chaque pourcentage de la ligne. */
+  n: number;
   row: (number | null)[];
 }
 
@@ -109,6 +118,9 @@ export interface AdamData {
     dauSeries: number[];
     wauSeries: number[];
     mauSeries: number[];
+    /** Taille des cohortes de rétention — dénominateurs des taux ci-dessous. */
+    retentionD7N: number;
+    retentionD30N: number;
     /** `null` quand aucune cohorte n'est encore observable sur la fenêtre. */
     retentionD7: number | null;
     retentionD7Prev: number | null;

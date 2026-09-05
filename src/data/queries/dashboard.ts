@@ -92,6 +92,11 @@ interface RetentionRow {
   d7_prev: number | null;
   d30: number | null;
   d30_prev: number | null;
+  /** Tailles de cohorte, dénominateurs des taux ci-dessus (migration 20260905230000). */
+  d7_n: number;
+  d7_prev_n: number;
+  d30_n: number;
+  d30_prev_n: number;
 }
 
 interface CohortRow {
@@ -241,7 +246,7 @@ function buildCohorts(rows: CohortRow[]): Cohort[] {
         const retained = entry.retained.get(offset) ?? 0;
         return entry.size ? Math.round((retained / entry.size) * 100) : 0;
       });
-      return { label: `Sem. du ${formatDay(week)} (n=${entry.size})`, row };
+      return { label: `Sem. du ${formatDay(week)}`, n: entry.size, row };
     });
 }
 
@@ -283,6 +288,7 @@ function buildObjectiveList(
       prev: retention.d7_prev,
       target: TARGETS.retentionD7,
       unit: '%',
+      sample: { n: retention.d7_n, noun: 'comptes' },
     },
     {
       label: 'Rétention J+30',
@@ -290,6 +296,7 @@ function buildObjectiveList(
       prev: retention.d30_prev,
       target: TARGETS.retentionD30,
       unit: '%',
+      sample: { n: retention.d30_n, noun: 'comptes' },
     },
     {
       label: 'Stickiness (DAU/MAU)',
@@ -298,6 +305,7 @@ function buildObjectiveList(
       target: TARGETS.stickiness,
       unit: '',
       dec: 2,
+      sample: { n: overview.mau, noun: 'actifs sur 30 jours' },
     },
     {
       label: 'Satisfaction réponses',
@@ -305,6 +313,7 @@ function buildObjectiveList(
       prev: satisfactionPrev,
       target: TARGETS.satisfaction,
       unit: '%',
+      sample: { n: quality.likes + quality.dislikes, noun: 'réactions' },
     },
     {
       // Aucune fenêtre précédente n'est calculée par la vue : pas de comparaison
@@ -314,6 +323,7 @@ function buildObjectiveList(
       prev: null,
       target: TARGETS.firstResolution,
       unit: '%',
+      sample: { n: quality.answered_discussions, noun: 'conversations' },
     },
   ];
 }
@@ -420,6 +430,8 @@ export async function fetchAdamData(): Promise<AdamData> {
       dauSeries: daily.map((d) => d.active_users),
       wauSeries: series.filter((s) => s.grain === 'week').map((s) => s.active_users),
       mauSeries: series.filter((s) => s.grain === 'month').map((s) => s.active_users),
+      retentionD7N: retention.d7_n,
+      retentionD30N: retention.d30_n,
       retentionD7: retention.d7,
       retentionD7Prev: retention.d7_prev,
       retentionD30: retention.d30,

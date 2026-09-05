@@ -37,6 +37,7 @@ export function Quality() {
           label="Satisfaction (pouces)"
           value={quality.satisfaction === null ? '—' : `${quality.satisfaction}%`}
           hint={`${quality.likes} 👍 · ${quality.dislikes} 👎`}
+          sample={{ n: quality.reactionsTotal, noun: 'réactions' }}
         />
         <StatCard label="Réponses évaluées" value={`${quality.reactionCoverage}%`} hint="couverture des réactions" />
         <StatCard label="Commentaires laissés" value={quality.feedbacksTotal} hint="feedbacks libres" />
@@ -44,6 +45,7 @@ export function Quality() {
           label="Conv. à une question"
           value={quality.firstResolution === null ? '—' : `${quality.firstResolution}%`}
           hint="proxy de résolution — voir note"
+          sample={{ n: quality.answeredDiscussions, noun: 'conversations' }}
         />
       </section>
 

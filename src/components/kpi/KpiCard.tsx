@@ -1,11 +1,14 @@
 import { colors, radius, spacing } from '../../theme/tokens';
 import { deltaColor, type BuiltObjective } from '../../lib/kpi';
+import { isLowSample, sampleWarning } from '../../lib/sample';
 
 interface KpiCardProps {
   objective: BuiltObjective;
 }
 
 export function KpiCard({ objective }: KpiCardProps) {
+  const low = isLowSample(objective.sample);
+
   return (
     <div
       style={{
@@ -33,11 +36,16 @@ export function KpiCard({ objective }: KpiCardProps) {
           fontSize: 28,
           fontWeight: 700,
           fontFamily: "'Montserrat',sans-serif",
-          color: objective.status === 'unknown' ? colors.faint : colors.text,
+          color: objective.status === 'unknown' || low ? colors.faint : colors.text,
         }}
       >
         {objective.actualTxt}
       </div>
+      {low && objective.sample && (
+        <div style={{ fontSize: 11, fontWeight: 600, color: colors.warn, lineHeight: 1.4 }}>
+          {sampleWarning(objective.sample)}
+        </div>
+      )}
       {/* Le vert est réservé à un vrai progrès : une stagnation reste grise. */}
       <div style={{ fontSize: 12, fontWeight: 600, color: deltaColor(objective.deltaTone) }}>
         {objective.deltaTone === 'flat' ? 'stable vs préc.' : objective.deltaTxt}

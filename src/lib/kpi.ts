@@ -13,6 +13,7 @@
  */
 import { colors } from '../theme/tokens';
 import type { Objective } from '../data/types';
+import type { Sample } from './sample';
 
 export type KpiStatus = 'ok' | 'warn' | 'alarm' | 'unknown';
 
@@ -61,6 +62,7 @@ export interface BuiltObjective {
   delta: number | null;
   deltaTone: DeltaTone;
   deltaTxt: string;
+  sample?: Sample;
 }
 
 export function buildObjectives(objectives: Objective[]): BuiltObjective[] {
@@ -89,6 +91,7 @@ export function buildObjectives(objectives: Objective[]): BuiltObjective[] {
         delta === null
           ? 'pas de comparaison'
           : `${delta > 0 ? '+' : ''}${fr(delta, dec)} vs préc.`,
+      sample: o.sample,
     };
   });
 }

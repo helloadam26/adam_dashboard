@@ -23,8 +23,16 @@ export function Engagement() {
       </header>
 
       <section style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: spacing.lg }}>
-        <StatCard label="Questions / actif (30 j)" value={usage.questionsPerUser} />
-        <StatCard label="Conversations / actif (30 j)" value={usage.sessionsPerUser} />
+        <StatCard
+          label="Questions / actif (30 j)"
+          value={usage.questionsPerUser}
+          sample={{ n: usage.mau, noun: 'actifs sur 30 jours' }}
+        />
+        <StatCard
+          label="Conversations / actif (30 j)"
+          value={usage.sessionsPerUser}
+          sample={{ n: usage.mau, noun: 'actifs sur 30 jours' }}
+        />
         {built.map((o) => (
           <KpiCard key={o.label} objective={o} />
         ))}

@@ -76,7 +76,7 @@ const remplie = (items: [string, number][], manquants = 0): Distribution => ({
 });
 
 const cohortes = (rows: [string, number, (number | null)[]][]): Cohort[] =>
-  rows.map(([semaine, n, row]) => ({ label: `Sem. du ${semaine} (n=${n})`, row }));
+  rows.map(([semaine, n, row]) => ({ label: `Sem. du ${semaine}`, n, row }));
 
 function base(): AdamData {
   return {
@@ -110,6 +110,8 @@ function base(): AdamData {
       dauSeries: serie(3, 11),
       wauSeries: serie(5, 13),
       mauSeries: serie(8, 17),
+      retentionD7N: 0,
+      retentionD30N: 0,
       retentionD7: null,
       retentionD7Prev: null,
       retentionD30: null,
