@@ -65,7 +65,7 @@ export function Overview() {
         <div style={{ fontSize: 12, color: colors.muted, marginBottom: spacing.md }}>
           DAU quotidien · 90 derniers jours
         </div>
-        <LineChart series={data.usage.dauSeries} />
+        <LineChart series={data.usage.dauSeries} labels={data.dates} />
       </section>
 
       <section>

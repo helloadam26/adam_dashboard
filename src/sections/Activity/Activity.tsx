@@ -25,14 +25,14 @@ export function Activity() {
       </section>
 
       <Panel title="Utilisateurs actifs par jour (DAU)" subtitle="Utilisateurs distincts ayant envoyé au moins un message">
-        <LineChart series={usage.dauSeries} />
+        <LineChart series={usage.dauSeries} labels={data.dates} />
       </Panel>
 
       <Panel
         title="Conversations par jour"
         subtitle={`${nombre(usage.conversations.total)} conversations au total · ${nombreSouple(usage.conversations.avgLength)} questions par conversation en moyenne. Une conversation est comptée dès qu'une question y a été posée : ouvrir un espace facultaire sans rien demander n'en crée pas.`}
       >
-        <LineChart series={usage.conversations.perDay} color={colors.peri} />
+        <LineChart series={usage.conversations.perDay} labels={data.dates} color={colors.peri} />
       </Panel>
 
       <Panel
@@ -44,7 +44,7 @@ export function Activity() {
           `de modèle ni un coût.`
         }
       >
-        <LineChart series={quota.perDay} color={colors.warn} />
+        <LineChart series={quota.perDay} labels={data.dates} color={colors.warn} />
 
         {/* Le compteur de quota persiste quand une conversation disparaît : les deux
             mesures divergent, et masquer l'écart reviendrait à en cacher une. */}

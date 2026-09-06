@@ -49,7 +49,7 @@ export function Users() {
         </Panel>
 
         <Panel title="Inscriptions par jour" subtitle="90 derniers jours">
-          <LineChart series={users.signups} height={220} />
+          <LineChart series={users.signups} labels={data.dates} height={220} />
         </Panel>
       </section>
 
