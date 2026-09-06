@@ -14,6 +14,7 @@
 import { colors } from '../theme/tokens';
 import type { Objective } from '../data/types';
 import type { Sample } from './sample';
+import { avecUnite, nombre } from './format';
 
 export type KpiStatus = 'ok' | 'warn' | 'alarm' | 'unknown';
 
@@ -42,10 +43,6 @@ export function deltaColor(tone: DeltaTone): string {
   if (tone === 'up') return colors.ok;
   if (tone === 'down') return colors.alarm;
   return colors.muted;
-}
-
-function fr(n: number, dec = 0): string {
-  return n.toLocaleString('fr-CA', { minimumFractionDigits: dec, maximumFractionDigits: dec });
 }
 
 export interface BuiltObjective {
@@ -79,8 +76,8 @@ export function buildObjectives(objectives: Objective[]): BuiltObjective[] {
       label: o.label,
       actual: o.actual,
       target: o.target,
-      actualTxt: measured ? fr(o.actual as number, dec) + (o.unit || '') : '—',
-      targetTxt: fr(o.target, dec) + (o.unit || ''),
+      actualTxt: measured ? avecUnite(nombre(o.actual as number, dec), o.unit) : '—',
+      targetTxt: avecUnite(nombre(o.target, dec), o.unit),
       status,
       statusLabel: meta.label,
       statusColor: meta.color,
@@ -90,7 +87,7 @@ export function buildObjectives(objectives: Objective[]): BuiltObjective[] {
       deltaTxt:
         delta === null
           ? 'pas de comparaison'
-          : `${delta > 0 ? '+' : ''}${fr(delta, dec)} vs préc.`,
+          : `${delta > 0 ? '+' : ''}${nombre(delta, dec)} vs préc.`,
       sample: o.sample,
     };
   });

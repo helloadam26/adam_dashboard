@@ -3,6 +3,7 @@ import { buildObjectives, pilotHealth } from '../../lib/kpi';
 import { LineChart } from '../../components/charts/LineChart';
 import { KpiCard } from '../../components/kpi/KpiCard';
 import { ObjectivesPanel } from '../../components/kpi/ObjectivesPanel';
+import { StatusLegend } from '../../components/kpi/StatusLegend';
 import { colors, radius, spacing } from '../../theme/tokens';
 
 const CRITICAL_LABELS = ['Comptes créés', 'Utilisateurs actifs (WAU)', 'Rétention J+7', 'Satisfaction réponses'];
@@ -43,10 +44,13 @@ export function Overview() {
         </p>
       </header>
 
-      <section style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: spacing.lg }}>
-        {critical.map((o) => (
-          <KpiCard key={o.label} objective={o} />
-        ))}
+      <section style={{ display: 'flex', flexDirection: 'column', gap: spacing.md }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: spacing.lg }}>
+          {critical.map((o) => (
+            <KpiCard key={o.label} objective={o} />
+          ))}
+        </div>
+        <StatusLegend />
       </section>
 
       <section

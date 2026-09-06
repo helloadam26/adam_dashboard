@@ -2,6 +2,7 @@ import { useAdamData } from '../../data/useAdamData';
 import { Panel } from '../../components/layout/Panel';
 import { EmptyState } from '../../components/EmptyState';
 import { colors, spacing } from '../../theme/tokens';
+import { pourcent } from '../../lib/format';
 
 /**
  * Section Facultés. Chaque « agent » de la table `agents` correspond à une faculté
@@ -53,7 +54,7 @@ export function Faculties() {
                   <td style={{ padding: '10px 0', textAlign: 'right', color: colors.muted }}>{f.users}</td>
                   <td style={{ padding: '10px 0', textAlign: 'right', color: colors.muted }}>{f.questions}</td>
                   <td style={{ padding: '10px 0', textAlign: 'right', color: colors.muted }}>
-                    {totalConversations ? Math.round((f.conversations / totalConversations) * 100) : 0}%
+                    {pourcent(totalConversations ? Math.round((f.conversations / totalConversations) * 100) : 0)}
                   </td>
                 </tr>
               ))}

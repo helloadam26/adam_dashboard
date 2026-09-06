@@ -156,6 +156,20 @@ function formatDay(iso: string): string {
   return new Date(`${iso}T00:00:00`).toLocaleDateString('fr-CA', { day: 'numeric', month: 'short' });
 }
 
+/**
+ * Jour + année, pour les repères isolés. Les séries quotidiennes gardent
+ * `formatDay` : sur 90 points l'année serait du bruit répété. Mais une borne
+ * seule — « 17 oct. » pour une période qui commence onze mois plus tôt — se lit
+ * comme une date récente si l'année manque.
+ */
+function formatDayYear(iso: string): string {
+  return new Date(`${iso}T00:00:00`).toLocaleDateString('fr-CA', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+  });
+}
+
 function formatFullDay(iso: string): string {
   return new Date(`${iso}T00:00:00`).toLocaleDateString('fr-CA', {
     day: 'numeric',
@@ -399,7 +413,7 @@ export async function fetchAdamData(): Promise<AdamData> {
     meta: {
       university: "Université d'Ottawa",
       pilot: 'Données de production · ADAM',
-      range: overview.first_signup_day ? `${formatDay(overview.first_signup_day)} → aujourd'hui` : '—',
+      range: overview.first_signup_day ? `${formatDayYear(overview.first_signup_day)} → aujourd'hui` : '—',
       updated: formatDateTime(new Date().toISOString()),
       lastActivity: formatDateTime(overview.last_activity),
       activeNow: overview.active_now,

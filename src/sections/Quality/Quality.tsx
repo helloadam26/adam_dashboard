@@ -4,6 +4,7 @@ import { Panel } from '../../components/layout/Panel';
 import { RankedList } from '../../components/RankedList';
 import { EmptyState } from '../../components/EmptyState';
 import { colors, spacing } from '../../theme/tokens';
+import { nombre, pourcent } from '../../lib/format';
 
 const LOW_COVERAGE = 2; // % de réponses évaluées en dessous duquel on affiche un avertissement.
 
@@ -25,8 +26,8 @@ export function Quality() {
       {lowCoverage && (
         <EmptyState>
           <strong style={{ color: colors.warn }}>Signal insuffisant.</strong> Seules{' '}
-          {quality.reactionsTotal} réponses sur {quality.assistantMessages.toLocaleString('fr-CA')} ont reçu une
-          réaction ({quality.reactionCoverage}% de couverture), et {quality.feedbacksTotal} commentaire(s) ont été
+          {quality.reactionsTotal} réponses sur {nombre(quality.assistantMessages)} ont reçu une
+          réaction ({pourcent(quality.reactionCoverage, 1)} de couverture), et {quality.feedbacksTotal} commentaire(s) ont été
           laissés. Les indicateurs ci-dessous sont affichés tels quels mais n'ont pas de valeur statistique tant
           que le retour utilisateur n'est pas plus sollicité dans l'app.
         </EmptyState>
@@ -35,15 +36,15 @@ export function Quality() {
       <section style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: spacing.lg }}>
         <StatCard
           label="Satisfaction (pouces)"
-          value={quality.satisfaction === null ? '—' : `${quality.satisfaction}%`}
+          value={quality.satisfaction === null ? '—' : pourcent(quality.satisfaction)}
           hint={`${quality.likes} 👍 · ${quality.dislikes} 👎`}
           sample={{ n: quality.reactionsTotal, noun: 'réactions' }}
         />
-        <StatCard label="Réponses évaluées" value={`${quality.reactionCoverage}%`} hint="couverture des réactions" />
+        <StatCard label="Réponses évaluées" value={pourcent(quality.reactionCoverage, 1)} hint="couverture des réactions" />
         <StatCard label="Commentaires laissés" value={quality.feedbacksTotal} hint="feedbacks libres" />
         <StatCard
           label="Conv. à une question"
-          value={quality.firstResolution === null ? '—' : `${quality.firstResolution}%`}
+          value={quality.firstResolution === null ? '—' : pourcent(quality.firstResolution)}
           hint="proxy de résolution — voir note"
           sample={{ n: quality.answeredDiscussions, noun: 'conversations' }}
         />

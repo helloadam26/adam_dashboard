@@ -39,8 +39,7 @@ export interface MetriqueIndisponible {
   dependance: Dependance;
 }
 
-const fr = (n: number, dec = 0): string =>
-  n.toLocaleString('fr-CA', { minimumFractionDigits: dec, maximumFractionDigits: dec });
+import { nombre as fr, pourcent } from '../lib/format';
 
 export function raisonTexte(m: MetriqueIndisponible, ctx: ContexteMetriques): string {
   return typeof m.raison === 'function' ? m.raison(ctx) : m.raison;
@@ -84,7 +83,7 @@ export const METRIQUES_INDISPONIBLES: MetriqueIndisponible[] = [
   {
     metrique: 'Satisfaction et CSAT fiables',
     raison: (ctx) =>
-      `Le mécanisme existe (message_reactions) mais n’a récolté que ${fr(ctx.reactions)} réactions pour ${fr(ctx.reponses)} réponses, soit ${fr(ctx.couverture, 1)} % de couverture. L’indicateur est affiché tel quel, sans valeur statistique.`,
+      `Le mécanisme existe (message_reactions) mais n’a récolté que ${fr(ctx.reactions)} réactions pour ${fr(ctx.reponses)} réponses, soit ${pourcent(ctx.couverture, 1)} de couverture. L’indicateur est affiché tel quel, sans valeur statistique.`,
     requis:
       'Rendre les pouces haut/bas plus visibles dans l’app, ou solliciter une évaluation en fin de conversation, pour monter la couverture à quelques pourcents.',
     dependance: 'app-principale',

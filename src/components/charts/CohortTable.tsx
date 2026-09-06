@@ -1,6 +1,7 @@
 import type { Cohort } from '../../data/types';
 import { N_MIN } from '../../lib/sample';
 import { colors, radius } from '../../theme/tokens';
+import { pourcent } from '../../lib/format';
 
 /**
  * Une case vide signale une semaine pas encore écoulée, pas une rétention nulle.
@@ -75,7 +76,7 @@ export function CohortTable({ cohorts }: { cohorts: Cohort[] }) {
                       ...cellStyle(value, c.n < N_MIN),
                     }}
                   >
-                    {value === null ? '·' : `${value}%`}
+                    {value === null ? '·' : pourcent(value)}
                   </td>
                 );
               })}

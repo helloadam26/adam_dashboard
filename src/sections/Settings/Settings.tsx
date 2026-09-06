@@ -9,6 +9,7 @@ import {
   type Dependance,
 } from '../../data/unavailableMetrics';
 import { colors, radius, spacing } from '../../theme/tokens';
+import { nombre } from '../../lib/format';
 
 function Row({ label, value }: { label: string; value: string }) {
   return (
@@ -82,11 +83,11 @@ export function Settings() {
           <p style={{ margin: '0 0 10px' }}>
             Sur les 30 derniers jours :{' '}
             <strong style={{ color: colors.text }}>
-              {data.quota.counted30d.toLocaleString('fr-CA')} questions décomptées
+              {nombre(data.quota.counted30d)} questions décomptées
             </strong>{' '}
             pour{' '}
             <strong style={{ color: colors.text }}>
-              {data.usage.questionsStored30d.toLocaleString('fr-CA')} conservées
+              {nombre(data.usage.questionsStored30d)} conservées
             </strong>
             . L'écart n'est pas une erreur de comptage : il mesure ce que les étudiants ont effacé.
           </p>

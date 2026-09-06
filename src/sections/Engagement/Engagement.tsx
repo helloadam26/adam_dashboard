@@ -5,6 +5,7 @@ import { KpiCard } from '../../components/kpi/KpiCard';
 import { Panel } from '../../components/layout/Panel';
 import { CohortTable } from '../../components/charts/CohortTable';
 import { colors, spacing } from '../../theme/tokens';
+import { nombreSouple } from '../../lib/format';
 
 const OBJECTIVE_LABELS = ['Rétention J+7', 'Rétention J+30'];
 
@@ -25,12 +26,12 @@ export function Engagement() {
       <section style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: spacing.lg }}>
         <StatCard
           label="Questions / actif (30 j)"
-          value={usage.questionsPerUser}
+          value={nombreSouple(usage.questionsPerUser, 1)}
           sample={{ n: usage.mau, noun: 'actifs sur 30 jours' }}
         />
         <StatCard
           label="Conversations / actif (30 j)"
-          value={usage.sessionsPerUser}
+          value={nombreSouple(usage.sessionsPerUser, 1)}
           sample={{ n: usage.mau, noun: 'actifs sur 30 jours' }}
         />
         {built.map((o) => (
