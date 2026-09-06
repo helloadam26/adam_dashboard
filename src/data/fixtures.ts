@@ -81,7 +81,8 @@ const cohortes = (rows: [string, number, (number | null)[]][]): Cohort[] =>
 function base(): AdamData {
   return {
     meta: {
-      university: "Université d'Ottawa",
+      population: "Étudiants de l'Université d'Ottawa",
+      affiliation: "Projet étudiant indépendant — aucun lien institutionnel officiel avec l'uOttawa",
       pilot: 'FIXTURES · données inventées',
       range: '2 juin → aujourd’hui',
       updated: '5 sept. 2026, 14:30',

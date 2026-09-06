@@ -411,8 +411,9 @@ export async function fetchAdamData(): Promise<AdamData> {
 
   return {
     meta: {
-      university: "Université d'Ottawa",
-      pilot: 'Données de production · ADAM',
+      population: "Étudiants de l'Université d'Ottawa",
+      affiliation: "Projet étudiant indépendant — aucun lien institutionnel officiel avec l'uOttawa",
+      pilot: 'données réelles',
       range: overview.first_signup_day ? `${formatDayYear(overview.first_signup_day)} → aujourd'hui` : '—',
       updated: formatDateTime(new Date().toISOString()),
       lastActivity: formatDateTime(overview.last_activity),

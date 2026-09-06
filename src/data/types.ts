@@ -80,7 +80,14 @@ export interface Distribution {
 
 export interface AdamData {
   meta: {
-    university: string;
+    /**
+     * Qui est mesuré — et non quelle institution serait derrière. « Établissement :
+     * Université d'Ottawa » se lisait comme une caution officielle sur un écran
+     * exportable, alors qu'ADAM est un projet étudiant sans partenariat formel.
+     */
+    population: string;
+    /** Rappel explicite de l'absence de lien institutionnel, affiché et exporté. */
+    affiliation: string;
     pilot: string;
     range: string;
     /** Horodatage de la requête, pas de la dernière activité. */

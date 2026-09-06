@@ -11,7 +11,7 @@ import {
 import { colors, radius, spacing } from '../../theme/tokens';
 import { nombre } from '../../lib/format';
 
-function Row({ label, value }: { label: string; value: string }) {
+function Row({ label, value, note }: { label: string; value: string; note?: string }) {
   return (
     <div
       style={{
@@ -24,7 +24,14 @@ function Row({ label, value }: { label: string; value: string }) {
       }}
     >
       <span style={{ color: colors.muted, flex: '0 0 auto' }}>{label}</span>
-      <span style={{ fontWeight: 600, textAlign: 'right' }}>{value}</span>
+      <span style={{ textAlign: 'right' }}>
+        <span style={{ fontWeight: 600 }}>{value}</span>
+        {note && (
+          <span style={{ display: 'block', fontSize: 11.5, color: colors.warn, fontWeight: 600, marginTop: 2 }}>
+            {note}
+          </span>
+        )}
+      </span>
     </div>
   );
 }
@@ -59,7 +66,7 @@ export function Settings() {
       </header>
 
       <Panel title="Source des données">
-        <Row label="Établissement" value={data.meta.university} />
+        <Row label="Population mesurée" value={data.meta.population} note={data.meta.affiliation} />
         <Row label="Période couverte" value={data.meta.range} />
         <Row label="Source" value="Supabase · vues dashboard_* en lecture seule" />
         <Row label="Authentification" value="Activée · comptes admin dédiés (2FA à venir)" />
