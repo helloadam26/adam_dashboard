@@ -10,11 +10,14 @@
  * 1. Un axe Y gradué. Ses libellés vivent en HTML, à gauche du SVG, et non dans le
  *    SVG : celui-ci est étiré horizontalement pour remplir son panneau
  *    (`preserveAspectRatio="none"`), ce qui déformerait le texte.
- * 2. La valeur au survol, par un `<title>` SVG natif — aucun état, aucun JS.
+ * 2. La valeur au survol. Une infobulle native `<title>` ne suffisait pas : elle
+ *    tarde une seconde et n'offre de cible que la barre elle-même, or sur une
+ *    série majoritairement à zéro il n'y a presque rien à survoler. Chaque point
+ *    reçoit donc une bande de survol pleine hauteur, et l'infobulle est en HTML.
  * 3. Des barres, et non une courbe lissée, quand les valeurs sont de petits
  *    entiers : une courbe interpole entre 0 et 3 des valeurs qui n'existent pas.
  */
-import { useId } from 'react';
+import { useId, useState } from 'react';
 import { nombre } from '../../lib/format';
 import { colors } from '../../theme/tokens';
 
@@ -47,6 +50,7 @@ function graduations(max: number, entiersPetits: boolean): number[] {
 
 export function LineChart({ series, labels, color = colors.indigo, height = 200 }: LineChartProps) {
   const gradientId = useId();
+  const [survol, setSurvol] = useState<number | null>(null);
   const w = 640;
   const pl = 4;
   const pr = 4;
@@ -79,9 +83,6 @@ export function LineChart({ series, labels, color = colors.indigo, height = 200 
 
   const px = (i: number) => pl + (i * (w - pl - pr)) / (n - 1);
   const py = (v: number) => height - pb - (v / echelle) * (height - pb - pt);
-
-  const infobulle = (i: number, v: number) =>
-    `${labels?.[i] ?? `Point ${i + 1}`} : ${nombre(v)}`;
 
   const pts = series.map((v, i) => [px(i), py(v)] as const);
   const line = pts.map((q, i) => (i ? 'L' : 'M') + q[0].toFixed(1) + ' ' + q[1].toFixed(1)).join(' ');
@@ -117,8 +118,10 @@ export function LineChart({ series, labels, color = colors.indigo, height = 200 
         ))}
       </div>
 
+      <div style={{ position: 'relative', flex: 1, minWidth: 0 }} onMouseLeave={() => setSurvol(null)}>
       <svg
         width="100%"
+        style={{ display: 'block' }}
         height={height}
         viewBox={`0 0 ${w} ${height}`}
         preserveAspectRatio="none"
@@ -145,9 +148,8 @@ export function LineChart({ series, labels, color = colors.indigo, height = 200 
               width={largeurBarre}
               height={v === 0 ? 1 : height - pb - py(v)}
               fill={v === 0 ? 'rgba(255,255,255,.10)' : color}
-            >
-              <title>{infobulle(i, v)}</title>
-            </rect>
+              opacity={survol === null || survol === i ? 1 : 0.45}
+            />
           ))
         ) : (
           <>
@@ -160,15 +162,58 @@ export function LineChart({ series, labels, color = colors.indigo, height = 200 
             <path d={area} fill={`url(#${gradientId})`} />
             <path d={line} fill="none" stroke={color} strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round" />
             <circle cx={pts[n - 1][0]} cy={pts[n - 1][1]} r={3.4} fill={color} stroke="#121217" strokeWidth={2} />
-            {/* Bandes de survol invisibles : sans elles, il faudrait viser la courbe au pixel. */}
-            {series.map((v, i) => (
-              <rect key={i} x={px(i) - largeurBarre / 2} y={0} width={largeurBarre} height={height} fill="transparent">
-                <title>{infobulle(i, v)}</title>
-              </rect>
-            ))}
           </>
         )}
+
+        {/* Repère vertical et point mis en avant, sous le curseur. */}
+        {survol !== null && (
+          <>
+            <line x1={px(survol)} y1={pt} x2={px(survol)} y2={height - pb} stroke="rgba(255,255,255,.22)" />
+            {!entiersPetits && (
+              <circle cx={px(survol)} cy={py(series[survol])} r={4} fill={color} stroke="#121217" strokeWidth={2} />
+            )}
+          </>
+        )}
+
+        {/* Bandes de survol pleine hauteur : sans elles, il faudrait viser au pixel
+            une barre de quelques pixels, voire inexistante les jours à zéro. */}
+        {series.map((_, i) => (
+          <rect
+            key={i}
+            x={px(i) - largeurBarre / 2}
+            y={0}
+            width={largeurBarre}
+            height={height}
+            fill="transparent"
+            onMouseEnter={() => setSurvol(i)}
+          />
+        ))}
       </svg>
+
+      {survol !== null && (
+        <div
+          style={{
+            position: 'absolute',
+            top: 0,
+            // Ancré en pourcentage : le SVG est étiré, ses unités ne sont pas des pixels.
+            left: `${(px(survol) / w) * 100}%`,
+            transform: survol > n / 2 ? 'translateX(calc(-100% - 8px))' : 'translateX(8px)',
+            pointerEvents: 'none',
+            background: colors.panel2,
+            border: `1px solid ${colors.line2}`,
+            borderRadius: 7,
+            padding: '5px 9px',
+            fontSize: 11.5,
+            whiteSpace: 'nowrap',
+            color: colors.text,
+            boxShadow: '0 4px 14px rgba(0,0,0,.45)',
+          }}
+        >
+          <span style={{ color: colors.muted }}>{labels?.[survol] ?? `Point ${survol + 1}`}</span>{' '}
+          <strong style={{ fontVariantNumeric: 'tabular-nums' }}>{nombre(series[survol])}</strong>
+        </div>
+      )}
+      </div>
     </div>
   );
 }
