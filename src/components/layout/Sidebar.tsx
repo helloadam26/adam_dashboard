@@ -5,8 +5,8 @@ import adamLogo from '../../assets/adam-logo.png';
 
 const NAV: [string, [string, string][]][] = [
   ['PILOTAGE', [['/', "Vue d'ensemble"], ['/performance', 'Performance']]],
-  ['AUDIENCE', [['/users', 'Utilisateurs'], ['/faculties', 'Facultés']]],
-  ['USAGE', [['/activity', 'Activité'], ['/engagement', 'Engagement']]],
+  ['AUDIENCE', [['/users', 'Utilisateurs']]],
+  ['USAGE', [['/activity', 'Activité'], ['/engagement', 'Engagement'], ['/calendar', 'Calendrier']]],
   ['ADAM', [['/quality', 'Qualité IA']]],
   ['LIVRABLES', [['/reports', 'Rapports'], ['/settings', 'Paramètres']]],
 ];

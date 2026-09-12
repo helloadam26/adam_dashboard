@@ -1,4 +1,5 @@
 import { colors } from '../../theme/tokens';
+import { nombre } from '../../lib/format';
 
 export interface BarListItem {
   name: string;
@@ -20,7 +21,7 @@ export function BarList({ items, unit = '', color = colors.indigo }: BarListProp
           <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12.5, marginBottom: 4 }}>
             <span style={{ color: colors.text }}>{it.name}</span>
             <span style={{ color: colors.muted, fontWeight: 600 }}>
-              {it.value}
+              {nombre(it.value)}
               {unit}
             </span>
           </div>

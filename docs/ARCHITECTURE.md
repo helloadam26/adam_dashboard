@@ -116,7 +116,13 @@ Schéma constaté (24 juillet 2026) : `profiles` (81), `agents` (9), `discussion
 
 **Sans aucun support en base** — types de réponse et taux de repli, NPS, usage détaillé des fonctionnalités, installation PWA, langue d'interface, calendrier académique. Recensés exhaustivement, avec la dépendance responsable (utilisateurs / app principale / dashboard) et ce qu'il faudrait, dans [`src/data/unavailableMetrics.ts`](../src/data/unavailableMetrics.ts) — rendu dans **Paramètres → Métriques non disponibles**.
 
-La section **Facultés** est conservée sous ce nom : la table s'appelle encore `agents` côté app faute de renommage, mais les 9 entrées *sont* les facultés et services de l'uOttawa.
+**Section Calendrier, en remplacement de Facultés (migration `20260912100000`).** L'app étudiante a ajouté cinq tables — `courses`, `import_drafts`, `calendar_events`, `reminders`, `reminder_preferences` — qu'aucune vue ne lisait : un étudiant dépose le plan de cours d'un cours, une IA en extrait les échéances datées, il les valide, des rappels se programment. Deux vues les agrègent, `dashboard_calendar` et `dashboard_calendar_types`, et mesurent la chaîne entière : ce qui entre, ce qui en sort, ce que l'étudiant garde, ce qui déclenche un rappel. Le taux d'échéances retouchées après extraction est le signal de qualité le plus direct — une échéance corrigée est une échéance mal lue.
+
+Ces vues n'exposent aucun contenu écrit par l'étudiant : ni titre d'échéance, ni code ou nom de cours, ni nom de fichier, ni extrait du plan de cours. Uniquement des comptes par type et par statut, catégories fermées par contrainte `CHECK`. Même arbitrage que `dashboard_topics`, appliqué d'emblée.
+
+Particularité assumée : l'exclusion du staff vide la section. Au 12 septembre 2026, la totalité des données du module appartient à des comptes `is_admin`, le module n'étant utilisé qu'en test interne. Les colonnes `staff_*` comptent ce volume **à part**, sans jamais l'additionner aux chiffres étudiants, pour que la section puisse dire « le module tourne, personne hors de l'équipe ne s'en sert encore » au lieu d'afficher un écran mort. Les deux vues sont par ailleurs hors du contrôle d'erreur bloquant du client : tant que la migration n'est pas appliquée, la section s'affiche vide sans emporter le reste du dashboard.
+
+Les mesures par faculté restent produites par `dashboard_agent_usage` et présentes dans le contrat de données ; seul l'écran qui les affichait a été retiré. La table s'appelle toujours `agents` côté app faute de renommage, mais les 9 entrées *sont* les facultés et services de l'uOttawa.
 
 Le `FiltersContext` de la section 6 reste en attente : sans dimension démographique renseignée, seul le filtre de période serait exploitable.
 

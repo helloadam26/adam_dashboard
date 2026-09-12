@@ -10,7 +10,7 @@
  * Ces chiffres sont inventés. Le bandeau affiché en mode fixtures est là pour
  * qu'aucune capture d'écran ne puisse être prise pour de la donnée réelle.
  */
-import type { AdamData, Cohort, Distribution, StatusItem } from './types';
+import type { AdamData, CalendarData, CalendarTypeItem, Cohort, Distribution, StatusItem } from './types';
 
 export type ScenarioId = 'pilote-reel' | 'avant-lancement' | 'signal-faible' | 'sain';
 
@@ -78,6 +78,25 @@ const remplie = (items: [string, number][], manquants = 0): Distribution => ({
 const cohortes = (rows: [string, number, (number | null)[]][]): Cohort[] =>
   rows.map(([semaine, n, row]) => ({ label: `Sem. du ${semaine}`, n, row }));
 
+const typesCalendrier = (exam: number, travail: number, test: number, autre: number): CalendarTypeItem[] => [
+  { type: 'exam', label: 'Examens', n: exam, validated: Math.round(exam * 0.8), users: Math.min(exam, 12) },
+  { type: 'assignment', label: 'Travaux', n: travail, validated: Math.round(travail * 0.7), users: Math.min(travail, 12) },
+  { type: 'quiz', label: 'Tests', n: test, validated: Math.round(test * 0.6), users: Math.min(test, 12) },
+  { type: 'other', label: 'Autres', n: autre, validated: 0, users: Math.min(autre, 4) },
+];
+
+const calendrierVide = (): CalendarData => ({
+  courses: 0,
+  coursesUsers: 0,
+  imports: { total: 0, users: 0, ready: 0, failed: 0, running: 0, withWarnings: 0, verified: 0, archived: 0 },
+  events: { total: 0, users: 0, validated: 0, draft: 0, rejected: 0, manual: 0, corrected: 0, high: 0, medium: 0, low: 0 },
+  reminders: { total: 0, sent: 0, pending: 0, failed: 0, optedIn: 0 },
+  byType: [],
+  firstImportDay: null,
+  lastEventAt: null,
+  staff: { imports: 0, events: 0, users: 0 },
+});
+
 function base(): AdamData {
   return {
     meta: {
@@ -139,6 +158,7 @@ function base(): AdamData {
       topics: [],
     },
     faculties: [],
+    calendar: calendrierVide(),
     quota: {
       counted: 0,
       counted30d: 0,
@@ -222,6 +242,18 @@ export function fixture(id: ScenarioId): AdamData {
     d.quality.satisfaction = 75;
     d.quality.satisfactionPrev = null;
     d.quality.firstResolution = null;
+    d.calendar = {
+      ...calendrierVide(),
+      courses: 1,
+      coursesUsers: 1,
+      imports: { total: 1, users: 1, ready: 1, failed: 0, running: 0, withWarnings: 1, verified: 1, archived: 0 },
+      events: { total: 4, users: 1, validated: 2, draft: 2, rejected: 0, manual: 0, corrected: 1, high: 2, medium: 1, low: 1 },
+      reminders: { total: 1, sent: 0, pending: 1, failed: 0, optedIn: 1 },
+      byType: typesCalendrier(1, 2, 1, 0),
+      firstImportDay: '3 septembre 2026',
+      lastEventAt: '5 septembre 2026, 14:02',
+      staff: { imports: 13, events: 2, users: 2 },
+    };
     d.faculties = [{ ...FACULTES[0], conversations: 28, users: 1, questions: 213 }];
     d.quota = { ...d.quota, counted: 213, counted30d: 34, usualLimit: 10, avgUsedOnActiveDays: 4.2, daysAtLimit: 2, usersAtLimit: 1, activeDays: 21 };
     d.objectives = [
@@ -285,6 +317,28 @@ export function fixture(id: ScenarioId): AdamData {
       { title: 'Aide financière', n: 27 },
       { title: 'Horaires d’examens', n: 19 },
     ];
+    d.calendar = {
+      courses: 318,
+      coursesUsers: 104,
+      imports: { total: 287, users: 98, ready: 251, failed: 19, running: 3, withWarnings: 88, verified: 236, archived: 41 },
+      events: {
+        total: 1842,
+        users: 96,
+        validated: 1497,
+        draft: 244,
+        rejected: 101,
+        manual: 63,
+        corrected: 209,
+        high: 1188,
+        medium: 482,
+        low: 172,
+      },
+      reminders: { total: 1104, sent: 812, pending: 281, failed: 11, optedIn: 74 },
+      byType: typesCalendrier(486, 921, 358, 77),
+      firstImportDay: '29 août 2026',
+      lastEventAt: "aujourd'hui, 09:41",
+      staff: { imports: 13, events: 2, users: 2 },
+    };
     d.faculties = FACULTES.map((f, i) => ({
       ...f,
       conversations: [1204, 892, 671, 415][i],
@@ -343,6 +397,10 @@ export function fixture(id: ScenarioId): AdamData {
   d.quality.firstResolution = null;
   d.quality.oneQuestionDiscussions = 0;
   d.quality.answeredDiscussions = 0;
+  // Calendrier au 12 septembre 2026 : le module tourne, mais aucun étudiant hors
+  // de l'équipe ne s'en sert. Les chiffres étudiants sont donc à zéro, et tout le
+  // volume observé est rangé dans `staff`.
+  d.calendar = { ...calendrierVide(), staff: { imports: 13, events: 2, users: 2 } };
   d.faculties = FACULTES.slice(0, 3).map((f, i) => ({
     ...f,
     conversations: [341, 156, 122][i],

@@ -6,7 +6,7 @@ import { FixturesMode, FIXTURES_ENABLED } from './dev/FixturesMode';
 import { Sidebar } from './components/layout/Sidebar';
 import { Overview } from './sections/Overview/Overview';
 import { Users } from './sections/Users/Users';
-import { Faculties } from './sections/Faculties/Faculties';
+import { Calendar } from './sections/Calendar/Calendar';
 import { Activity } from './sections/Activity/Activity';
 import { Engagement } from './sections/Engagement/Engagement';
 import { Quality } from './sections/Quality/Quality';
@@ -37,7 +37,7 @@ function Shell() {
             <Route path="/" element={<Overview />} />
             <Route path="/performance" element={<Performance />} />
             <Route path="/users" element={<Users />} />
-            <Route path="/faculties" element={<Faculties />} />
+            <Route path="/calendar" element={<Calendar />} />
             <Route path="/activity" element={<Activity />} />
             <Route path="/engagement" element={<Engagement />} />
             <Route path="/quality" element={<Quality />} />
