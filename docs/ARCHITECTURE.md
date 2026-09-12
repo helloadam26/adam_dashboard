@@ -126,7 +126,8 @@ Les policies RLS des tables applicatives sont toutes de la forme « chacun ses p
 
 - `20260724120000_dashboard_readonly_views.sql` — `is_dashboard_admin()` (`security definer`) + 7 vues d'agrégats ;
 - `20260724130000_dashboard_metrics_extension.sql` — 4 vues supplémentaires (`demographics`, `quality`, `topics`, `quota`), resserrement des droits sur les vues existantes, et ouverture temporaire du prédicat d'accès (refermée depuis, voir plus bas) ;
-- `20260728190000_reenable_auth_admin_scope.sql` — clôture de la phase de conception : prédicat réel restauré, `anon` retiré, staff dashboard exclu des métriques.
+- `20260728190000_reenable_auth_admin_scope.sql` — clôture de la phase de conception : prédicat réel restauré, `anon` retiré, staff dashboard exclu des métriques basées sur `profiles` ;
+- `20260911230000_comptes_staff_hors_activite.sql` — trois administrateurs de plus, et l'activité du staff (`messages`, `discussions`, `daily_tokens`, réactions) retirée de toutes les vues.
 
 Les vues appartiennent à `postgres` (hors RLS des tables sous-jacentes) ; le contrôle d'accès vit dans leur corps (`where is_dashboard_admin()`), pas dans une policy — d'où le badge « Unrestricted » du Table Editor, normal pour une vue. Aucune vue n'expose de contenu de message, d'e-mail ni d'identifiant.
 
@@ -139,14 +140,16 @@ Résultat aujourd'hui : bloc vide, à dessein. Un vrai indicateur « sujets » s
 
 **Authentification (migration `20260728190000`).** La phase de conception est close : `<AuthGate>` protège de nouveau `App.tsx` et `is_dashboard_admin()` revient au vrai contrôle `profiles.is_admin`. Le rôle `anon` n'a plus aucun droit de lecture sur les vues — après connexion, le client interroge en tant que `authenticated`.
 
-Les comptes du dashboard sont **dédiés et distincts des comptes étudiants** : sign-up + login par courriel/mot de passe. Le trigger `on_auth_user_created` (infra de l'app étudiante, non modifié) crée malgré tout une ligne `profiles` à chaque inscription ; les comptes `is_admin = true` sont donc **exclus de tous les agrégats basés sur profiles** (comptes, statuts, démographie, rétention, cohortes) pour ne pas polluer les métriques étudiantes. Un compte connecté mais non `is_admin` reste en état « en attente d'autorisation ».
+Les comptes du dashboard se connectent par courriel/mot de passe. Le trigger `on_auth_user_created` (infra de l'app étudiante, non modifié) crée malgré tout une ligne `profiles` à chaque inscription ; les comptes `is_admin = true` sont donc **exclus de tous les agrégats**, pour ne pas polluer les métriques étudiantes. Un compte connecté mais non `is_admin` reste en état « en attente d'autorisation ».
+
+**Portée de l'exclusion (migration `20260911230000`).** Elle ne se limite plus aux agrégats basés sur `profiles`. Jusqu'au 11 septembre 2026, les administrateurs étaient des comptes dédiés sans usage de l'app étudiante : `20260728190000` s'était donc arrêtée aux effectifs, statuts, démographie, rétention et cohortes, en laissant `messages`, `discussions` et `daily_tokens` non filtrés. Trois comptes ayant réellement utilisé ADAM ayant été promus, la prémisse est tombée. Le prédicat `is_staff_account(uuid)` retire désormais l'activité du staff de **toutes** les vues : actifs, conversations, questions, quota, séries, usage par faculté, sujets et qualité. Les réactions et les commentaires portent leur propre `user_id`, sur lequel ils sont filtrés directement. Conséquence attendue : les chiffres d'activité baissent, y compris sur l'historique — c'est le but, ils comptaient des tests internes.
 
 Provisionnement du premier admin (le sign-up ne l'accorde pas) :
 
 ```sql
 update public.profiles p set is_admin = true
 from auth.users u
-where u.id = p.id and u.email = 'TON_COURRIEL';
+where u.id = p.id and lower(u.email) = 'ton_courriel';
 ```
 
 Reste au périmètre du playbook, non implémenté : 2FA (TOTP) et minuteur d'inactivité.
