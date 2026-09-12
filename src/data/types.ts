@@ -8,13 +8,25 @@
  * n'ont aucun support en base — sont recensées dans `unavailableMetrics.ts`.
  */
 
+import type { Sample } from '../lib/sample';
+
 export interface Objective {
   label: string;
-  actual: number;
-  prev: number;
+  /**
+   * `null` quand la métrique n'a aucune donnée derrière elle (dénominateur vide).
+   * Une absence de mesure n'est pas une valeur de 0 : elle ne doit ni compter comme
+   * un écart à la cible, ni peser sur le verdict de santé du pilote.
+   */
+  actual: number | null;
+  prev: number | null;
   target: number;
   unit: string;
   dec?: number;
+  /**
+   * Observations derrière la valeur, quand c'est un ratio. Absent pour un compte
+   * absolu — « 86 comptes créés » n'a pas d'échantillon, c'est la mesure elle-même.
+   */
+  sample?: Sample;
 }
 
 export interface StatusItem {
@@ -35,6 +47,8 @@ export interface NamedCount {
 
 export interface Cohort {
   label: string;
+  /** Taille de la cohorte — dénominateur de chaque pourcentage de la ligne. */
+  n: number;
   row: (number | null)[];
 }
 
@@ -66,7 +80,14 @@ export interface Distribution {
 
 export interface AdamData {
   meta: {
-    university: string;
+    /**
+     * Qui est mesuré — et non quelle institution serait derrière. « Établissement :
+     * Université d'Ottawa » se lisait comme une caution officielle sur un écran
+     * exportable, alors qu'ADAM est un projet étudiant sans partenariat formel.
+     */
+    population: string;
+    /** Rappel explicite de l'absence de lien institutionnel, affiché et exporté. */
+    affiliation: string;
     pilot: string;
     range: string;
     /** Horodatage de la requête, pas de la dernière activité. */
@@ -74,6 +95,14 @@ export interface AdamData {
     /** Dernier message reçu, toutes conversations confondues. */
     lastActivity: string;
     activeNow: number;
+    /**
+     * Phase du pilote. Avant le lancement officiel, les cibles — qui sont des cibles
+     * de *fin* de pilote — ne sont pas encore exigibles : aucun verdict de santé
+     * n'est rendu.
+     */
+    phase: 'avant-lancement' | 'en-cours';
+    /** Date de lancement officiel du pilote, formatée pour l'affichage. */
+    launchDate: string;
   };
   /** Étiquettes des 90 derniers jours, alignées sur toutes les séries quotidiennes. */
   dates: string[];
@@ -96,13 +125,19 @@ export interface AdamData {
     dauSeries: number[];
     wauSeries: number[];
     mauSeries: number[];
-    retentionD7: number;
-    retentionD7Prev: number;
-    retentionD30: number;
-    retentionD30Prev: number;
+    /** Taille des cohortes de rétention — dénominateurs des taux ci-dessous. */
+    retentionD7N: number;
+    retentionD30N: number;
+    /** `null` quand aucune cohorte n'est encore observable sur la fenêtre. */
+    retentionD7: number | null;
+    retentionD7Prev: number | null;
+    retentionD30: number | null;
+    retentionD30Prev: number | null;
     stickiness: number;
     sessionsPerUser: number;
     questionsPerUser: number;
+    /** Questions encore stockées sur 30 jours — à comparer à `quota.counted30d`. */
+    questionsStored30d: number;
     cohorts: Cohort[];
     conversations: {
       perDay: number[];
@@ -130,15 +165,33 @@ export interface AdamData {
   };
   /** Facultés et services — la table s'appelle encore `agents` côté app. */
   faculties: AgentUsage[];
-  tokens: {
-    total: number;
-    last30: number;
+  /**
+   * Quota quotidien de questions. La colonne source s'appelle `daily_tokens.tokens_used`,
+   * mais elle ne compte pas des tokens LLM : vérifié le 5 septembre 2026, elle égale
+   * exactement le nombre de questions posées dans la journée sur 151 des 162
+   * jours-utilisateur comparés, et son plafond `tokens_limit` vaut 10 par défaut.
+   *
+   * Ce compteur diverge des questions encore stockées dans `messages` (639 contre 594
+   * au total, 106 contre 33 sur 30 jours) : il persiste quand une conversation
+   * disparaît. Les deux mesures sont donc distinctes et toutes deux exactes —
+   * « décomptées du quota » d'un côté, « encore conservées » de l'autre.
+   */
+  quota: {
+    /** Questions décomptées du quota, cumul depuis le début. */
+    counted: number;
+    counted30d: number;
     perDay: number[];
-    avgPerActiveUser: number;
-    avgLimit: number;
-    avgUsed: number;
+    /**
+     * Plafond quotidien usuel (le mode, pas la moyenne). Un unique compte à 1000
+     * tirait la moyenne à 13,3 alors que le plafond rencontré est 10.
+     */
+    usualLimit: number;
+    /** Questions par jour réellement actif — les jours à zéro sont exclus. */
+    avgUsedOnActiveDays: number;
+    /** Jours actifs où le plafond a été atteint. */
     daysAtLimit: number;
     usersAtLimit: number;
-    userDays: number;
+    /** Jours-utilisateur avec au moins une question — dénominateur des deux ci-dessus. */
+    activeDays: number;
   };
 }

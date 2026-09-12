@@ -20,7 +20,13 @@ export class MissingAdminAccessError extends Error {
   }
 }
 
-/** Cibles du pilote, issues du playbook — elles ne vivent pas en base. */
+/**
+ * Lancement officiel du pilote. Les cibles ci-dessous sont des cibles de *fin* de
+ * pilote : avant cette date, les mesurer rend tout rouge par construction.
+ */
+const PILOT_LAUNCH = '2026-09-01';
+
+/** Cibles de fin de pilote, issues du playbook — elles ne vivent pas en base. */
 const TARGETS = {
   usersTotal: 240,
   wau: 100,
@@ -63,7 +69,7 @@ interface DailyRow {
 }
 
 interface StatusRow {
-  status: 'active' | 'dormant' | 'never_active';
+  status: 'active' | 'dormant' | 'untracked' | 'never_active';
   n: number;
 }
 
@@ -76,11 +82,21 @@ interface AgentRow {
   questions: number;
 }
 
+/**
+ * `null` quand aucun compte ne tombe dans la fenêtre d'inscription observée : il n'y
+ * a alors pas de cohorte à mesurer, ce qui n'est pas une rétention de 0 %
+ * (migration 20260905120000).
+ */
 interface RetentionRow {
-  d7: number;
-  d7_prev: number;
-  d30: number;
-  d30_prev: number;
+  d7: number | null;
+  d7_prev: number | null;
+  d30: number | null;
+  d30_prev: number | null;
+  /** Tailles de cohorte, dénominateurs des taux ci-dessus (migration 20260905230000). */
+  d7_n: number;
+  d7_prev_n: number;
+  d30_n: number;
+  d30_prev_n: number;
 }
 
 interface CohortRow {
@@ -140,6 +156,36 @@ function formatDay(iso: string): string {
   return new Date(`${iso}T00:00:00`).toLocaleDateString('fr-CA', { day: 'numeric', month: 'short' });
 }
 
+/**
+ * Jour + année, pour les repères isolés. Les séries quotidiennes gardent
+ * `formatDay` : sur 90 points l'année serait du bruit répété. Mais une borne
+ * seule — « 17 oct. » pour une période qui commence onze mois plus tôt — se lit
+ * comme une date récente si l'année manque.
+ */
+function formatDayYear(iso: string): string {
+  return new Date(`${iso}T00:00:00`).toLocaleDateString('fr-CA', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+  });
+}
+
+function formatFullDay(iso: string): string {
+  return new Date(`${iso}T00:00:00`).toLocaleDateString('fr-CA', {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  });
+}
+
+/**
+ * Le pilote a-t-il commencé ? Tant qu'il n'a pas démarré, comparer l'état actuel à
+ * des cibles de fin de pilote n'informe personne.
+ */
+function pilotPhase(): 'avant-lancement' | 'en-cours' {
+  return Date.now() >= new Date(`${PILOT_LAUNCH}T00:00:00`).getTime() ? 'en-cours' : 'avant-lancement';
+}
+
 function formatDateTime(iso: string | null): string {
   if (!iso) return '—';
   return new Date(iso).toLocaleString('fr-CA', {
@@ -151,13 +197,22 @@ function formatDateTime(iso: string | null): string {
   });
 }
 
+/**
+ * Depuis la migration 20260905210000, l'activité se lit sur deux signaux : les
+ * messages conservés et le quota de questions consommé. Le second survit à la
+ * suppression d'une conversation, d'où le statut `untracked`.
+ */
 const STATUS_LABELS: Record<StatusRow['status'], { label: string; hint: string }> = {
-  active: { label: 'Actifs', hint: 'au moins un message ces 30 jours' },
-  dormant: { label: 'Dormants', hint: 'aucun message depuis plus de 30 jours' },
-  never_active: { label: 'Jamais actifs', hint: 'compte créé, aucun message envoyé' },
+  active: { label: 'Actifs', hint: 'une question posée ces 30 jours' },
+  dormant: { label: 'Dormants', hint: 'aucune activité depuis plus de 30 jours' },
+  untracked: {
+    label: 'Usage sans historique',
+    hint: 'ont consommé leur quota de questions, mais aucune conversation n’est conservée',
+  },
+  never_active: { label: 'Jamais actifs', hint: 'compte créé, aucune question posée' },
 };
 
-const STATUS_ORDER: StatusRow['status'][] = ['active', 'dormant', 'never_active'];
+const STATUS_ORDER: StatusRow['status'][] = ['active', 'dormant', 'untracked', 'never_active'];
 
 function buildStatus(rows: StatusRow[]): StatusItem[] {
   return STATUS_ORDER.map((status) => ({
@@ -205,7 +260,7 @@ function buildCohorts(rows: CohortRow[]): Cohort[] {
         const retained = entry.retained.get(offset) ?? 0;
         return entry.size ? Math.round((retained / entry.size) * 100) : 0;
       });
-      return { label: `Sem. du ${formatDay(week)} (n=${entry.size})`, row };
+      return { label: `Sem. du ${formatDay(week)}`, n: entry.size, row };
     });
 }
 
@@ -217,11 +272,14 @@ function buildObjectiveList(
   retention: RetentionRow,
   quality: QualityRow,
 ): Objective[] {
-  const stickiness = overview.mau ? overview.dau / overview.mau : 0;
-  const stickinessPrev = overview.mau_prev ? overview.dau_prev / overview.mau_prev : 0;
-  const satisfaction = pct(quality.likes, quality.likes + quality.dislikes) ?? 0;
-  const satisfactionPrev = pct(quality.likes_prev, quality.likes_prev + quality.dislikes_prev) ?? 0;
-  const firstResolution = pct(quality.one_question_discussions, quality.answered_discussions) ?? 0;
+  // `null` plutôt que 0 quand le dénominateur est vide : sans réaction, la
+  // satisfaction est inconnue, pas nulle. La ramener à 0 la ferait compter comme un
+  // écart à la cible et basculerait à elle seule le verdict de santé du pilote.
+  const stickiness = overview.mau ? Number((overview.dau / overview.mau).toFixed(2)) : null;
+  const stickinessPrev = overview.mau_prev ? Number((overview.dau_prev / overview.mau_prev).toFixed(2)) : null;
+  const satisfaction = pct(quality.likes, quality.likes + quality.dislikes);
+  const satisfactionPrev = pct(quality.likes_prev, quality.likes_prev + quality.dislikes_prev);
+  const firstResolution = pct(quality.one_question_discussions, quality.answered_discussions);
 
   return [
     {
@@ -244,6 +302,7 @@ function buildObjectiveList(
       prev: retention.d7_prev,
       target: TARGETS.retentionD7,
       unit: '%',
+      sample: { n: retention.d7_n, noun: 'comptes' },
     },
     {
       label: 'Rétention J+30',
@@ -251,14 +310,16 @@ function buildObjectiveList(
       prev: retention.d30_prev,
       target: TARGETS.retentionD30,
       unit: '%',
+      sample: { n: retention.d30_n, noun: 'comptes' },
     },
     {
       label: 'Stickiness (DAU/MAU)',
-      actual: Number(stickiness.toFixed(2)),
-      prev: Number(stickinessPrev.toFixed(2)),
+      actual: stickiness,
+      prev: stickinessPrev,
       target: TARGETS.stickiness,
       unit: '',
       dec: 2,
+      sample: { n: overview.mau, noun: 'actifs sur 30 jours' },
     },
     {
       label: 'Satisfaction réponses',
@@ -266,13 +327,17 @@ function buildObjectiveList(
       prev: satisfactionPrev,
       target: TARGETS.satisfaction,
       unit: '%',
+      sample: { n: quality.likes + quality.dislikes, noun: 'réactions' },
     },
     {
+      // Aucune fenêtre précédente n'est calculée par la vue : pas de comparaison
+      // possible. `prev: firstResolution` affichait un « +0 » vert permanent.
       label: 'Résolution 1er échange',
       actual: firstResolution,
-      prev: firstResolution,
+      prev: null,
       target: TARGETS.firstResolution,
       unit: '%',
+      sample: { n: quality.answered_discussions, noun: 'conversations' },
     },
   ];
 }
@@ -331,27 +396,30 @@ export async function fetchAdamData(): Promise<AdamData> {
   const overview = overviewRes.data;
   const retention = retentionRes.data;
   const quality = qualityRes.data;
-  const quota = quotaRes.data;
+  const quotaRow = quotaRes.data;
 
   // Ces quatre vues renvoient toujours exactement une ligne quand l'accès est ouvert.
-  if (!overview || !retention || !quality || !quota) throw new MissingAdminAccessError();
+  if (!overview || !retention || !quality || !quotaRow) throw new MissingAdminAccessError();
 
   const daily = dailyRes.data ?? [];
   const series = seriesRes.data ?? [];
   const faculties = facultiesRes.data ?? [];
   const demographics = demographicsRes.data ?? [];
 
-  const tokens30 = num(overview.tokens_30d);
+  const quotaCounted30d = num(overview.tokens_30d);
   const reactionsTotal = quality.likes + quality.dislikes;
 
   return {
     meta: {
-      university: "Université d'Ottawa",
-      pilot: 'Données de production · ADAM',
-      range: overview.first_signup_day ? `${formatDay(overview.first_signup_day)} → aujourd'hui` : '—',
+      population: "Étudiants de l'Université d'Ottawa",
+      affiliation: "Projet étudiant indépendant — aucun lien institutionnel officiel avec l'uOttawa",
+      pilot: 'données réelles',
+      range: overview.first_signup_day ? `${formatDayYear(overview.first_signup_day)} → aujourd'hui` : '—',
       updated: formatDateTime(new Date().toISOString()),
       lastActivity: formatDateTime(overview.last_activity),
       activeNow: overview.active_now,
+      phase: pilotPhase(),
+      launchDate: formatFullDay(PILOT_LAUNCH),
     },
 
     dates: daily.map((d) => formatDay(d.day)),
@@ -377,6 +445,8 @@ export async function fetchAdamData(): Promise<AdamData> {
       dauSeries: daily.map((d) => d.active_users),
       wauSeries: series.filter((s) => s.grain === 'week').map((s) => s.active_users),
       mauSeries: series.filter((s) => s.grain === 'month').map((s) => s.active_users),
+      retentionD7N: retention.d7_n,
+      retentionD30N: retention.d30_n,
       retentionD7: retention.d7,
       retentionD7Prev: retention.d7_prev,
       retentionD30: retention.d30,
@@ -384,6 +454,7 @@ export async function fetchAdamData(): Promise<AdamData> {
       stickiness: overview.mau ? Number((overview.dau / overview.mau).toFixed(2)) : 0,
       sessionsPerUser: overview.mau ? Number((overview.conversations_30d / overview.mau).toFixed(1)) : 0,
       questionsPerUser: overview.mau ? Number((overview.questions_30d / overview.mau).toFixed(1)) : 0,
+      questionsStored30d: overview.questions_30d,
       cohorts: buildCohorts(cohortsRes.data ?? []),
       conversations: {
         perDay: daily.map((d) => d.conversations),
@@ -419,16 +490,20 @@ export async function fetchAdamData(): Promise<AdamData> {
       questions: a.questions,
     })),
 
-    tokens: {
-      total: num(overview.tokens_total),
-      last30: tokens30,
+    // `tokens_*` en base = compteur de quota de questions, pas des tokens LLM.
+    // Le renommage s'arrête au contrat de données : la colonne appartient à l'app
+    // étudiante, qui l'écrit sous son nom d'origine.
+    quota: {
+      counted: num(overview.tokens_total),
+      counted30d: quotaCounted30d,
       perDay: daily.map((d) => d.tokens),
-      avgPerActiveUser: overview.mau ? Number((tokens30 / overview.mau).toFixed(1)) : 0,
-      avgLimit: num(quota.avg_limit),
-      avgUsed: num(quota.avg_used),
-      daysAtLimit: quota.days_at_limit,
-      usersAtLimit: quota.users_at_limit,
-      userDays: quota.user_days,
+      // Colonnes conservées sous leurs noms de vue ; leur contenu a changé en
+      // migration 20260905190000 (mode au lieu de moyenne, jours actifs seulement).
+      usualLimit: num(quotaRow.avg_limit),
+      avgUsedOnActiveDays: num(quotaRow.avg_used),
+      daysAtLimit: quotaRow.days_at_limit,
+      usersAtLimit: quotaRow.users_at_limit,
+      activeDays: quotaRow.user_days,
     },
   };
 }

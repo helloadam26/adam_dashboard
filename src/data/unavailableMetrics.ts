@@ -16,13 +16,33 @@ export type Dependance =
   /** La donnée existe : il reste à la calculer ou l'afficher dans ce dashboard. */
   | 'dashboard';
 
+/**
+ * Les chiffres cités dans ces textes doivent venir des mêmes vues que le reste du
+ * dashboard. Écrits en dur, ils se figent au jour de leur rédaction et finissent par
+ * contredire l'onglet Qualité IA sur la même métrique — c'est le tueur de confiance
+ * n° 1 d'un dashboard.
+ */
+export interface ContexteMetriques {
+  comptes: number;
+  reactions: number;
+  reponses: number;
+  /** Part des réponses ayant reçu une réaction, en %. */
+  couverture: number;
+}
+
 export interface MetriqueIndisponible {
   metrique: string;
-  /** Ce qui manque, factuellement. */
-  raison: string;
+  /** Ce qui manque, factuellement. Fonction dès que le constat cite un chiffre. */
+  raison: string | ((ctx: ContexteMetriques) => string);
   /** Ce qu'il faudrait mettre en place. */
   requis: string;
   dependance: Dependance;
+}
+
+import { nombre as fr, pourcent } from '../lib/format';
+
+export function raisonTexte(m: MetriqueIndisponible, ctx: ContexteMetriques): string {
+  return typeof m.raison === 'function' ? m.raison(ctx) : m.raison;
 }
 
 export const DEPENDANCE_LABELS: Record<Dependance, string> = {
@@ -40,8 +60,8 @@ export const DEPENDANCE_HINTS: Record<Dependance, string> = {
 export const METRIQUES_INDISPONIBLES: MetriqueIndisponible[] = [
   {
     metrique: 'Répartition par faculté, programme et année d’étude',
-    raison:
-      'Les colonnes profiles.faculty, program et study_years existent mais sont vides sur les 81 comptes. Les blocs d’affichage sont en place et se rempliront seuls.',
+    raison: (ctx) =>
+      `Les colonnes profiles.faculty, program et study_years existent mais sont vides sur les ${fr(ctx.comptes)} comptes. Les blocs d’affichage sont en place et se rempliront seuls.`,
     requis:
       'Faire renseigner ces champs à l’inscription ou dans le profil, puis les rendre obligatoires ou les pré-remplir depuis l’annuaire uOttawa.',
     dependance: 'utilisateurs',
@@ -62,8 +82,8 @@ export const METRIQUES_INDISPONIBLES: MetriqueIndisponible[] = [
   },
   {
     metrique: 'Satisfaction et CSAT fiables',
-    raison:
-      'Le mécanisme existe (message_reactions) mais n’a récolté que 4 réactions pour 592 réponses, soit moins de 1 % de couverture. L’indicateur est affiché tel quel, sans valeur statistique.',
+    raison: (ctx) =>
+      `Le mécanisme existe (message_reactions) mais n’a récolté que ${fr(ctx.reactions)} réactions pour ${fr(ctx.reponses)} réponses, soit ${pourcent(ctx.couverture, 1)} de couverture. L’indicateur est affiché tel quel, sans valeur statistique.`,
     requis:
       'Rendre les pouces haut/bas plus visibles dans l’app, ou solliciter une évaluation en fin de conversation, pour monter la couverture à quelques pourcents.',
     dependance: 'app-principale',

@@ -3,6 +3,7 @@
  * (mix de catégories, ex. types de réponse ADAM).
  */
 import { colors } from '../../theme/tokens';
+import { pourcent } from '../../lib/format';
 
 export interface DonutSegment {
   name: string;
@@ -55,7 +56,7 @@ export function DonutLegend({ segments }: { segments: DonutSegment[] }) {
         <div key={seg.name} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12.5 }}>
           <span style={{ width: 9, height: 9, borderRadius: 99, background: seg.color, flex: '0 0 auto' }} />
           <span style={{ color: colors.text, flex: 1 }}>{seg.name}</span>
-          <span style={{ color: colors.muted, fontWeight: 600 }}>{seg.val}%</span>
+          <span style={{ color: colors.muted, fontWeight: 600 }}>{pourcent(seg.val)}</span>
         </div>
       ))}
     </div>

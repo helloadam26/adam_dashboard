@@ -10,7 +10,7 @@ export function Users() {
   const data = useAdamData();
   const { users } = data;
 
-  const statusColors = [colors.ok, colors.warn, colors.faint];
+  const statusColors = [colors.ok, colors.warn, colors.peri, colors.faint];
   const statusTotal = users.status.reduce((a, b) => a + b.n, 0);
   const statusSegments = users.status.map((s, i) => ({
     name: s.label,
@@ -49,7 +49,7 @@ export function Users() {
         </Panel>
 
         <Panel title="Inscriptions par jour" subtitle="90 derniers jours">
-          <LineChart series={users.signups} height={220} />
+          <LineChart series={users.signups} labels={data.dates} height={220} />
         </Panel>
       </section>
 

@@ -1,14 +1,12 @@
 import { useAdamData } from '../../data/useAdamData';
-import { buildObjectives, pilotHealth } from '../../lib/kpi';
+import { buildObjectives, deltaColor } from '../../lib/kpi';
 import { Panel } from '../../components/layout/Panel';
-import { Ring } from '../../components/charts/Ring';
 import { ObjectivesPanel } from '../../components/kpi/ObjectivesPanel';
 import { colors, spacing } from '../../theme/tokens';
 
 export function Performance() {
   const data = useAdamData();
   const built = buildObjectives(data.objectives);
-  const health = pilotHealth(built);
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: spacing.xl, padding: spacing.xl }}>
@@ -19,12 +17,7 @@ export function Performance() {
         </p>
       </header>
 
-      <section style={{ display: 'grid', gridTemplateColumns: '1fr 1.6fr', gap: spacing.lg }}>
-        <Panel title="% Objectifs atteints" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-          <Ring value={health.achieved} total={health.total} color={health.color} />
-        </Panel>
-        <ObjectivesPanel built={built} />
-      </section>
+      <ObjectivesPanel built={built} phase={data.meta.phase} launchDate={data.meta.launchDate} />
 
       <Panel title="KPIs vs cibles">
         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
@@ -32,7 +25,7 @@ export function Performance() {
             <tr style={{ textAlign: 'left', color: colors.faint, fontSize: 11, textTransform: 'uppercase', letterSpacing: '.04em' }}>
               <th style={{ padding: '0 0 10px', fontWeight: 700 }}>KPI</th>
               <th style={{ padding: '0 0 10px', fontWeight: 700, textAlign: 'right' }}>Actuel</th>
-              <th style={{ padding: '0 0 10px', fontWeight: 700, textAlign: 'right' }}>Cible</th>
+              <th style={{ padding: '0 0 10px', fontWeight: 700, textAlign: 'right' }}>Cible fin de pilote</th>
               <th style={{ padding: '0 0 10px', fontWeight: 700, textAlign: 'right' }}>Δ vs préc.</th>
               <th style={{ padding: '0 0 10px', fontWeight: 700, textAlign: 'right' }}>Statut</th>
             </tr>
@@ -41,11 +34,19 @@ export function Performance() {
             {built.map((o, i) => (
               <tr key={o.label} style={{ borderTop: i > 0 ? `1px solid ${colors.line}` : 'none' }}>
                 <td style={{ padding: '10px 0', color: colors.text }}>{o.label}</td>
-                <td style={{ padding: '10px 0', textAlign: 'right', fontWeight: 700 }}>{o.actualTxt}</td>
+                <td
+                  style={{
+                    padding: '10px 0',
+                    textAlign: 'right',
+                    fontWeight: 700,
+                    color: o.status === 'unknown' ? colors.faint : colors.text,
+                  }}
+                >
+                  {o.actualTxt}
+                </td>
                 <td style={{ padding: '10px 0', textAlign: 'right', color: colors.muted }}>{o.targetTxt}</td>
-                <td style={{ padding: '10px 0', textAlign: 'right', color: o.deltaUp ? colors.ok : colors.alarm }}>
-                  {o.deltaUp ? '+' : ''}
-                  {o.delta.toLocaleString('fr-CA', { maximumFractionDigits: 2 })}
+                <td style={{ padding: '10px 0', textAlign: 'right', color: deltaColor(o.deltaTone) }}>
+                  {o.deltaTone === 'none' ? '—' : o.deltaTxt.replace(' vs préc.', '')}
                 </td>
                 <td style={{ padding: '10px 0', textAlign: 'right' }}>
                   <span

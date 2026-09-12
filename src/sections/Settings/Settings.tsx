@@ -4,11 +4,14 @@ import {
   METRIQUES_INDISPONIBLES,
   DEPENDANCE_LABELS,
   DEPENDANCE_HINTS,
+  raisonTexte,
+  type ContexteMetriques,
   type Dependance,
 } from '../../data/unavailableMetrics';
 import { colors, radius, spacing } from '../../theme/tokens';
+import { nombre } from '../../lib/format';
 
-function Row({ label, value }: { label: string; value: string }) {
+function Row({ label, value, note }: { label: string; value: string; note?: string }) {
   return (
     <div
       style={{
@@ -21,7 +24,14 @@ function Row({ label, value }: { label: string; value: string }) {
       }}
     >
       <span style={{ color: colors.muted, flex: '0 0 auto' }}>{label}</span>
-      <span style={{ fontWeight: 600, textAlign: 'right' }}>{value}</span>
+      <span style={{ textAlign: 'right' }}>
+        <span style={{ fontWeight: 600 }}>{value}</span>
+        {note && (
+          <span style={{ display: 'block', fontSize: 11.5, color: colors.warn, fontWeight: 600, marginTop: 2 }}>
+            {note}
+          </span>
+        )}
+      </span>
     </div>
   );
 }
@@ -37,6 +47,17 @@ const DEP_ORDER: Dependance[] = ['app-principale', 'utilisateurs', 'dashboard'];
 export function Settings() {
   const data = useAdamData();
 
+  // Les constats chiffrés lisent les mêmes vues que l'onglet Qualité IA : un seul
+  // total pour une seule métrique, d'un onglet à l'autre.
+  const ctx: ContexteMetriques = {
+    comptes: data.users.total,
+    reactions: data.quality.reactionsTotal,
+    reponses: data.quality.assistantMessages,
+    couverture: data.quality.reactionCoverage,
+  };
+
+  const untracked = data.users.status.find((s) => s.label === 'Usage sans historique')?.n ?? 0;
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: spacing.xl, padding: spacing.xl }}>
       <header>
@@ -45,12 +66,54 @@ export function Settings() {
       </header>
 
       <Panel title="Source des données">
-        <Row label="Établissement" value={data.meta.university} />
+        <Row label="Population mesurée" value={data.meta.population} note={data.meta.affiliation} />
         <Row label="Période couverte" value={data.meta.range} />
         <Row label="Source" value="Supabase · vues dashboard_* en lecture seule" />
         <Row label="Authentification" value="Activée · comptes admin dédiés (2FA à venir)" />
         <Row label="Dernière activité enregistrée" value={data.meta.lastActivity} />
         <Row label="Données chargées le" value={data.meta.updated} />
+      </Panel>
+
+      <Panel
+        title="Deux compteurs, deux vérités"
+        subtitle="Pourquoi certains chiffres ne se recoupent pas — et pourquoi c'est normal"
+      >
+        <div style={{ fontSize: 12.5, color: colors.muted, lineHeight: 1.7 }}>
+          <p style={{ margin: '0 0 10px' }}>
+            L'usage d'ADAM se mesure de deux façons, et elles ne donnent pas le même total.
+            Les <strong style={{ color: colors.text }}>questions décomptées du quota</strong> comptent
+            ce qui a été demandé : ce compteur doit survivre à la suppression d'une conversation,
+            sinon le plafond quotidien se contournerait en effaçant son historique. Les{' '}
+            <strong style={{ color: colors.text }}>questions conservées</strong> comptent ce qui reste
+            réellement en base.
+          </p>
+          <p style={{ margin: '0 0 10px' }}>
+            Sur les 30 derniers jours :{' '}
+            <strong style={{ color: colors.text }}>
+              {nombre(data.quota.counted30d)} questions décomptées
+            </strong>{' '}
+            pour{' '}
+            <strong style={{ color: colors.text }}>
+              {nombre(data.usage.questionsStored30d)} conservées
+            </strong>
+            . L'écart n'est pas une erreur de comptage : il mesure ce que les étudiants ont effacé.
+          </p>
+          {untracked > 0 && (
+            <p style={{ margin: '0 0 10px' }}>
+              <strong style={{ color: colors.peri }}>{untracked} compte(s)</strong> ont consommé leur
+              quota sans qu'aucune conversation ne subsiste. Ils apparaissaient auparavant comme
+              « jamais actifs », ce qui était faux — ils ont bien utilisé ADAM. Ils forment désormais
+              la part <strong style={{ color: colors.peri }}>« Usage sans historique »</strong> du
+              graphique des statuts, plutôt que d'être fondus dans les actifs : compter leur usage sans
+              le signaler masquerait le fait qu'on ne sait plus ce qu'ils ont demandé.
+            </p>
+          )}
+          <p style={{ margin: 0 }}>
+            À retenir pour lire le reste du dashboard : tout ce qui dérive des messages —
+            conversations, sujets, satisfaction, résolution — porte sur ce qui a été conservé, et
+            sous-estime donc l'usage réel. Les indicateurs de quota, eux, sont complets.
+          </p>
+        </div>
       </Panel>
 
       <Panel
@@ -97,7 +160,7 @@ export function Settings() {
                   <div style={{ fontSize: 13, fontWeight: 600, color: colors.text }}>{m.metrique}</div>
                   <div style={{ fontSize: 12, color: colors.muted, marginTop: 4, lineHeight: 1.5 }}>
                     <span style={{ color: colors.faint }}>Pourquoi : </span>
-                    {m.raison}
+                    {raisonTexte(m, ctx)}
                   </div>
                   <div style={{ fontSize: 12, color: colors.muted, marginTop: 3, lineHeight: 1.5 }}>
                     <span style={{ color: colors.faint }}>Requis : </span>
