@@ -69,7 +69,11 @@ export function Settings() {
         <Row label="Population mesurée" value={data.meta.population} note={data.meta.affiliation} />
         <Row label="Période couverte" value={data.meta.range} />
         <Row label="Source" value="Supabase · vues dashboard_* en lecture seule" />
-        <Row label="Authentification" value="Activée · comptes admin dédiés (2FA à venir)" />
+        <Row
+          label="Authentification"
+          value="Activée · accès réservé aux comptes autorisés (2FA à venir)"
+          note="Comptes administrateurs exclus des métriques, activité comprise."
+        />
         <Row label="Dernière activité enregistrée" value={data.meta.lastActivity} />
         <Row label="Données chargées le" value={data.meta.updated} />
       </Panel>

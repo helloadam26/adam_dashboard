@@ -134,7 +134,10 @@ export const METRIQUES_INDISPONIBLES: MetriqueIndisponible[] = [
   },
   {
     metrique: 'Repères du calendrier académique sur les courbes',
-    raison: 'Aucune table de dates universitaires (rentrée, limites d’ajout et d’abandon, semaine de lecture).',
+    raison:
+      'Aucune table de dates universitaires (rentrée, limites d’ajout et d’abandon, semaine de lecture). '
+      + 'À ne pas confondre avec le module Calendrier : `calendar_events` contient les échéances propres '
+      + 'à chaque étudiant, extraites de son plan de cours, pas le calendrier officiel de l’université.',
     requis:
       'Ces dates sont publiques et peu nombreuses : une table de référence en base, ou une constante versionnée dans ce dépôt, suffit.',
     dependance: 'dashboard',

@@ -8,7 +8,17 @@
  * laquelle l'authentification est masquée côté front.
  */
 import { supabase } from '../supabaseClient';
-import type { AdamData, Cohort, Distribution, NamedCount, Objective, StatusItem } from '../types';
+import type {
+  AdamData,
+  CalendarData,
+  CalendarEventType,
+  CalendarTypeItem,
+  Cohort,
+  Distribution,
+  NamedCount,
+  Objective,
+  StatusItem,
+} from '../types';
 
 export class MissingAdminAccessError extends Error {
   constructor() {
@@ -80,6 +90,47 @@ interface AgentRow {
   conversations: number;
   users: number;
   questions: number;
+}
+
+/** Vue `dashboard_calendar` (migration 20260912100000) — toujours une seule ligne. */
+interface CalendarRow {
+  courses_total: number;
+  courses_users: number;
+  imports_total: number;
+  imports_users: number;
+  imports_ready: number;
+  imports_failed: number;
+  imports_running: number;
+  imports_with_warnings: number;
+  imports_verified: number;
+  imports_archived: number;
+  events_total: number;
+  events_users: number;
+  events_validated: number;
+  events_draft: number;
+  events_rejected: number;
+  events_manual: number;
+  events_corrected: number;
+  events_high: number;
+  events_medium: number;
+  events_low: number;
+  reminders_total: number;
+  reminders_sent: number;
+  reminders_pending: number;
+  reminders_failed: number;
+  reminders_opted_in: number;
+  first_import_day: string | null;
+  last_event_at: string | null;
+  staff_imports: number;
+  staff_events: number;
+  staff_users: number;
+}
+
+interface CalendarTypeRow {
+  type: CalendarEventType;
+  n: number;
+  validated: number;
+  users: number;
 }
 
 /**
@@ -267,6 +318,93 @@ function buildCohorts(rows: CohortRow[]): Cohort[] {
 const pct = (part: number, whole: number): number | null =>
   whole ? Math.round((part / whole) * 100) : null;
 
+const TYPE_LABELS: Record<CalendarEventType, string> = {
+  exam: 'Examens',
+  assignment: 'Travaux',
+  quiz: 'Tests',
+  other: 'Autres',
+};
+
+/**
+ * Calendrier absent : renvoyé tel quel tant que la migration 20260912100000 n'est
+ * pas appliquée. La section affiche alors son état vide au lieu de faire échouer
+ * tout le dashboard — les deux vues sont donc hors du contrôle d'erreur bloquant.
+ */
+function emptyCalendar(): CalendarData {
+  return {
+    courses: 0,
+    coursesUsers: 0,
+    imports: { total: 0, users: 0, ready: 0, failed: 0, running: 0, withWarnings: 0, verified: 0, archived: 0 },
+    events: {
+      total: 0,
+      users: 0,
+      validated: 0,
+      draft: 0,
+      rejected: 0,
+      manual: 0,
+      corrected: 0,
+      high: 0,
+      medium: 0,
+      low: 0,
+    },
+    reminders: { total: 0, sent: 0, pending: 0, failed: 0, optedIn: 0 },
+    byType: [],
+    firstImportDay: null,
+    lastEventAt: null,
+    staff: { imports: 0, events: 0, users: 0 },
+  };
+}
+
+function buildCalendar(row: CalendarRow | null, types: CalendarTypeRow[]): CalendarData {
+  if (!row) return emptyCalendar();
+
+  const byType: CalendarTypeItem[] = types.map((t) => ({
+    type: t.type,
+    label: TYPE_LABELS[t.type] ?? t.type,
+    n: t.n,
+    validated: t.validated,
+    users: t.users,
+  }));
+
+  return {
+    courses: row.courses_total,
+    coursesUsers: row.courses_users,
+    imports: {
+      total: row.imports_total,
+      users: row.imports_users,
+      ready: row.imports_ready,
+      failed: row.imports_failed,
+      running: row.imports_running,
+      withWarnings: row.imports_with_warnings,
+      verified: row.imports_verified,
+      archived: row.imports_archived,
+    },
+    events: {
+      total: row.events_total,
+      users: row.events_users,
+      validated: row.events_validated,
+      draft: row.events_draft,
+      rejected: row.events_rejected,
+      manual: row.events_manual,
+      corrected: row.events_corrected,
+      high: row.events_high,
+      medium: row.events_medium,
+      low: row.events_low,
+    },
+    reminders: {
+      total: row.reminders_total,
+      sent: row.reminders_sent,
+      pending: row.reminders_pending,
+      failed: row.reminders_failed,
+      optedIn: row.reminders_opted_in,
+    },
+    byType,
+    firstImportDay: row.first_import_day ? formatDayYear(row.first_import_day) : null,
+    lastEventAt: row.last_event_at ? formatDateTime(row.last_event_at) : null,
+    staff: { imports: row.staff_imports, events: row.staff_events, users: row.staff_users },
+  };
+}
+
 function buildObjectiveList(
   overview: OverviewRow,
   retention: RetentionRow,
@@ -355,6 +493,8 @@ export async function fetchAdamData(): Promise<AdamData> {
     qualityRes,
     topicsRes,
     quotaRes,
+    calendarRes,
+    calendarTypesRes,
   ] = await Promise.all([
     supabase.from('dashboard_overview').select('*').maybeSingle<OverviewRow>(),
     supabase.from('dashboard_daily_activity').select('*').order('day').returns<DailyRow[]>(),
@@ -371,12 +511,17 @@ export async function fetchAdamData(): Promise<AdamData> {
     supabase.from('dashboard_quality').select('*').maybeSingle<QualityRow>(),
     supabase.from('dashboard_topics').select('*').returns<TopicRow[]>(),
     supabase.from('dashboard_quota').select('*').maybeSingle<QuotaRow>(),
+    supabase.from('dashboard_calendar').select('*').maybeSingle<CalendarRow>(),
+    supabase.from('dashboard_calendar_types').select('*').returns<CalendarTypeRow[]>(),
   ]);
 
   // dashboard_topics est volontairement réservée aux vrais administrateurs
   // (migration 20260724140000) : la clé anon reçoit « permission denied ». C'est
   // attendu, pas fatal — le bloc « Sujets » s'affiche simplement vide. On exclut donc
-  // topics du contrôle d'erreur bloquant.
+  // topics du contrôle d'erreur bloquant. Les deux vues du Calendrier en sont
+  // exclues pour une autre raison : elles datent du 12 septembre 2026 et peuvent
+  // ne pas encore être appliquées. Leur absence vide une section, elle ne doit pas
+  // emporter tout le dashboard.
   const fatalResponses = [
     overviewRes,
     dailyRes,
@@ -489,6 +634,8 @@ export async function fetchAdamData(): Promise<AdamData> {
       users: a.users,
       questions: a.questions,
     })),
+
+    calendar: buildCalendar(calendarRes.data, calendarTypesRes.data ?? []),
 
     // `tokens_*` en base = compteur de quota de questions, pas des tokens LLM.
     // Le renommage s'arrête au contrat de données : la colonne appartient à l'app

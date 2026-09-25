@@ -78,6 +78,73 @@ export interface Distribution {
   manquants: number;
 }
 
+/** Catégorie d'échéance. Liste fermée, contrainte par un CHECK en base. */
+export type CalendarEventType = 'exam' | 'assignment' | 'quiz' | 'other';
+
+export interface CalendarTypeItem {
+  type: CalendarEventType;
+  label: string;
+  n: number;
+  validated: number;
+  users: number;
+}
+
+/**
+ * Module Calendrier : un étudiant dépose le plan de cours d'un cours, une IA en
+ * extrait les échéances datées, l'étudiant les valide, des rappels se programment.
+ *
+ * Aucun contenu écrit par l'étudiant ne transite ici — ni titre d'échéance, ni code
+ * de cours, ni nom de fichier, ni extrait du plan de cours. Uniquement des comptes
+ * par type et par statut (migration 20260912100000).
+ */
+export interface CalendarData {
+  courses: number;
+  coursesUsers: number;
+  imports: {
+    total: number;
+    users: number;
+    ready: number;
+    failed: number;
+    /** En attente ou en cours de traitement. */
+    running: number;
+    withWarnings: number;
+    /** Imports dont la seconde passe de vérification a confirmé l'extraction. */
+    verified: number;
+    archived: number;
+  };
+  events: {
+    total: number;
+    users: number;
+    validated: number;
+    draft: number;
+    rejected: number;
+    /** Échéances saisies à la main plutôt qu'extraites. */
+    manual: number;
+    /** Échéances extraites puis retouchées par l'étudiant. */
+    corrected: number;
+    high: number;
+    medium: number;
+    low: number;
+  };
+  reminders: {
+    total: number;
+    sent: number;
+    pending: number;
+    failed: number;
+    /** Comptes ayant activé les rappels dans leurs préférences. */
+    optedIn: number;
+  };
+  byType: CalendarTypeItem[];
+  firstImportDay: string | null;
+  lastEventAt: string | null;
+  /**
+   * Ce que l'équipe a produit en test interne. Compté à part et jamais additionné
+   * aux chiffres ci-dessus : au 12 septembre 2026 c'est la totalité des données du
+   * module, et un écran tout à zéro sans cette précision se lirait comme une panne.
+   */
+  staff: { imports: number; events: number; users: number };
+}
+
 export interface AdamData {
   meta: {
     /**
@@ -165,6 +232,7 @@ export interface AdamData {
   };
   /** Facultés et services — la table s'appelle encore `agents` côté app. */
   faculties: AgentUsage[];
+  calendar: CalendarData;
   /**
    * Quota quotidien de questions. La colonne source s'appelle `daily_tokens.tokens_used`,
    * mais elle ne compte pas des tokens LLM : vérifié le 5 septembre 2026, elle égale
